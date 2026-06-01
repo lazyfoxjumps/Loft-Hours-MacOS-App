@@ -1,0 +1,12 @@
+# Build output (the GitHub Release holds the distributable binary, not the repo)
+.build/
+build/
+dist/
+Loft Hours.app/
+
+# macOS cruft
+.DS_Store
+
+# Internal working docs (not for public)
+HANDOFF.md
+PHASE5-GITHUB-BETA-PLAN.md
