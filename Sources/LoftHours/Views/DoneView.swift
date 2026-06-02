@@ -16,7 +16,7 @@ struct DoneView: View {
                 .font(.system(size: 52))
                 .foregroundStyle(isError ? p.warn : p.done)
 
-            Text(isError ? "Couldn't save the log" : "Session logged")
+            Text(isError ? "Hmm, I couldn't save that one" : "All logged. Nice work today.")
                 .font(AppFont.heading)
                 .foregroundStyle(p.foreground)
 
@@ -35,7 +35,7 @@ struct DoneView: View {
                 .tint(p.accent)
             }
 
-            Button("Start another") {
+            Button("Go again") {
                 controller.reset()
             }
             .controlSize(.large)

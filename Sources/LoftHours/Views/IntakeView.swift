@@ -79,7 +79,7 @@ struct IntakeView: View {
                         Text("Loft Hours")
                             .font(AppFont.wordmark)
                             .foregroundStyle(p.foreground)
-                        Text("Let's set up a focus session.")
+                        Text("Hey, glad you're here. Let's get you set up.")
                             .foregroundStyle(p.muted)
                     }
                     Spacer()
@@ -147,7 +147,7 @@ struct IntakeView: View {
                     }
                 }
 
-                field("How long do you want this to be?") {
+                field("How long are we going for?") {
                     VStack(alignment: .leading, spacing: 8) {
                         ThemedSegmented(
                             options: [(.m25, "25 min"), (.m50, "50 min"), (.m90, "90 min"), (.custom, "Custom")],
@@ -167,8 +167,8 @@ struct IntakeView: View {
                     }
                 }
 
-                field("And what does done look like for this session?") {
-                    TextField("One concrete thing that'll feel finished", text: $deliverable, axis: .vertical)
+                field("What would make this feel done?") {
+                    TextField("One thing that'll feel good to finish", text: $deliverable, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(1...3)
                 }
@@ -182,7 +182,7 @@ struct IntakeView: View {
                 }
 
                 Button(action: start) {
-                    Text("Start session")
+                    Text("Let's get into it")
                         .frame(maxWidth: .infinity)
                 }
                 .controlSize(.large)
@@ -282,7 +282,7 @@ struct IntakeView: View {
                 .fill(p.surface)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(p.surfaceBorder, lineWidth: 1))
         )
-        .help("Runs your configured Focus Shortcut. Set the shortcut names in Settings.")
+        .help("Flips on Do Not Disturb so the world leaves you alone. Set it up in Settings.")
     }
 
     @ViewBuilder

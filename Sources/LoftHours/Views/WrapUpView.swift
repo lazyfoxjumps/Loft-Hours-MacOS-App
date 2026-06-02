@@ -49,7 +49,7 @@ struct WrapUpView: View {
                     }
                 }
 
-                field("What goals do you have in mind next?") {
+                field("What's next on your mind?") {
                     TextField("I'm planning to...", text: $nextStep, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(1...3)

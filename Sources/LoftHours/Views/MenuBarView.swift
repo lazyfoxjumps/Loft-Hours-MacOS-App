@@ -9,7 +9,7 @@ struct MenuBarView: View {
     var body: some View {
         switch controller.phase {
         case .intake:
-            Text("No active session")
+            Text("Nothing going right now")
         case .running:
             Text(controller.isPaused ? "Paused" : "Focusing")
             if let goal = controller.session?.goal {
@@ -37,7 +37,7 @@ struct MenuBarView: View {
         case .wrapUp:
             Text("Wrapping up...")
         case .done:
-            Text("Session logged")
+            Text("All logged")
         }
 
         Divider()

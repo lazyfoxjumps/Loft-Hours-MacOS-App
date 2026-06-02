@@ -16,11 +16,11 @@ struct BreakView: View {
                 Spacer(minLength: 0)
                 VStack(spacing: 26) {
                 VStack(spacing: 6) {
-                    Text("Block \(controller.blocks) done.")
+                    Text("That's block \(controller.blocks) done.")
                         .font(AppFont.heading)
                         .foregroundStyle(p.foreground)
                     if let goal = controller.session?.goal {
-                        Text("Good job on completing: \(goal)")
+                        Text("Nice work on: \(goal)")
                             .font(AppFont.callout)
                             .foregroundStyle(p.muted)
                             .multilineTextAlignment(.center)
@@ -30,7 +30,7 @@ struct BreakView: View {
 
                 breakRing(p, viewportSize: geo.size)
 
-                Text(controller.isBreakOver ? "Break's over, ready when you are." : controller.currentReminder)
+                Text(controller.isBreakOver ? "Break's over. Ready when you are, no rush." : controller.currentReminder)
                     .font(AppFont.callout)
                     .foregroundStyle(p.muted)
                     .multilineTextAlignment(.center)
@@ -39,7 +39,7 @@ struct BreakView: View {
                     Text("So, how's it going so far? (optional)")
                         .font(AppFont.headline)
                         .foregroundStyle(p.foreground)
-                    TextField("Log the progress, or leave it blank", text: $checkIn, axis: .vertical)
+                    TextField("Jot a line, or leave it blank", text: $checkIn, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(1...3)
                 }
@@ -49,7 +49,7 @@ struct BreakView: View {
                     Button {
                         controller.finishToWrapUp(checkIn: checkIn)
                     } label: {
-                        Text("Finish and log").frame(maxWidth: .infinity)
+                        Text("Wrap it up").frame(maxWidth: .infinity)
                     }
                     .controlSize(.large)
                     .buttonStyle(.bordered)
@@ -59,7 +59,7 @@ struct BreakView: View {
                         controller.startAnotherBlock(checkIn: checkIn)
                         checkIn = ""
                     } label: {
-                        Text("Another block").frame(maxWidth: .infinity)
+                        Text("One more block").frame(maxWidth: .infinity)
                     }
                     .controlSize(.large)
                     .buttonStyle(.borderedProminent)
