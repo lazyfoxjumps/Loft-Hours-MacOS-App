@@ -23,6 +23,17 @@
 	<true/>
 
 	<!--
+	  Outbound network access for the Google Calendar integration (OAuth token
+	  exchange + Calendar API). Unlike the time-sensitive key above, this is NOT
+	  a restricted entitlement, so it is safe under ad-hoc signing and does not
+	  cause the launch SIGKILL. On the current non-sandboxed build network access
+	  is already unrestricted; this key matters once the App Store sandbox is
+	  turned on (it pairs with com.apple.security.app-sandbox below).
+	-->
+	<key>com.apple.security.network.client</key>
+	<true/>
+
+	<!--
 	  App Store sandbox entitlements are deferred until/unless we ship to the
 	  Mac App Store (see PHASE5-GITHUB-BETA-PLAN.md and the handoff). When that
 	  happens, add here:

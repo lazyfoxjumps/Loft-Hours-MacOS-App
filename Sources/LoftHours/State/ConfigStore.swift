@@ -28,6 +28,18 @@ final class ConfigStore: ObservableObject {
         didSet { defaults.set(restoreAppsAfter, forKey: Keys.restoreAppsAfter) }
     }
 
+    // Google Calendar sync. The OAuth tokens live in the Keychain (see
+    // GoogleAuth); these are just the user's preference + a display mirror.
+    @Published var calendarSyncEnabled: Bool {
+        didSet { defaults.set(calendarSyncEnabled, forKey: Keys.calendarSyncEnabled) }
+    }
+    @Published var calendarId: String {
+        didSet { defaults.set(calendarId, forKey: Keys.calendarId) }
+    }
+    @Published var calendarConnectedEmail: String? {
+        didSet { defaults.set(calendarConnectedEmail, forKey: Keys.calendarConnectedEmail) }
+    }
+
     private let defaults: UserDefaults
 
     private enum Keys {
@@ -38,6 +50,9 @@ final class ConfigStore: ObservableObject {
         static let alwaysClose = "lofthours.apps.alwaysClose"
         static let openForFocus = "lofthours.apps.openForFocus"
         static let restoreAppsAfter = "lofthours.apps.restoreAfter"
+        static let calendarSyncEnabled = "lofthours.calendar.enabled"
+        static let calendarId = "lofthours.calendar.id"
+        static let calendarConnectedEmail = "lofthours.calendar.email"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -53,5 +68,8 @@ final class ConfigStore: ObservableObject {
         } else {
             self.restoreAppsAfter = defaults.bool(forKey: Keys.restoreAppsAfter)
         }
+        self.calendarSyncEnabled = defaults.bool(forKey: Keys.calendarSyncEnabled)
+        self.calendarId = defaults.string(forKey: Keys.calendarId) ?? "primary"
+        self.calendarConnectedEmail = defaults.string(forKey: Keys.calendarConnectedEmail)
     }
 }

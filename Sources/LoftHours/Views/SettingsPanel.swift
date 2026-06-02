@@ -15,6 +15,12 @@ struct SettingsPanel: View {
     /// Installed apps on this Mac, scanned once when Settings opens, used to
     /// power the type-ahead dropdown in the Manage apps lists.
     @State private var appsIndex = InstalledAppsIndex(apps: [])
+    /// Shared Google OAuth handle for the Calendar integration (also used by
+    /// SessionController to create per-block events).
+    @EnvironmentObject private var googleAuth: GoogleAuth
+    /// Transient status under the Calendar connect button (errors / progress).
+    @State private var calendarStatus: String? = nil
+    @State private var calendarBusy = false
 
     /// Whether both configured Focus shortcuts exist. Nil when we can't tell.
     private var focusShortcutsReady: Bool? {
@@ -126,6 +132,8 @@ struct SettingsPanel: View {
                 focusSection(p)
                 Divider().background(p.surfaceBorder)
                 appsSection(p)
+                Divider().background(p.surfaceBorder)
+                calendarSection(p)
                 Text("Each step runs only if its toggle is on. Failures are silent so a missing shortcut or app never breaks the session.")
                     .font(AppFont.caption)
                     .foregroundStyle(p.muted)
@@ -232,6 +240,76 @@ struct SettingsPanel: View {
             .toggleStyle(.switch)
             .tint(p.accent)
             .disabled(!config.appManagementEnabled)
+        }
+    }
+
+    // MARK: - Google Calendar section (test harness + real connect UI)
+
+    private func calendarSection(_ p: Palette) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: $config.calendarSyncEnabled) {
+                Text("Block time on Google Calendar")
+                    .font(AppFont.headline)
+                    .foregroundStyle(p.foreground)
+            }
+            .toggleStyle(.switch)
+            .tint(p.accent)
+            .disabled(!googleAuth.isConnected)
+
+            Text("When on, each focus block adds a busy event to your Google Calendar for the length of the timer, titled \"Loft Hours - your tasks\". Finished blocks stay on your calendar.")
+                .font(AppFont.caption)
+                .foregroundStyle(p.muted)
+
+            HStack(spacing: 8) {
+                if let email = googleAuth.connectedEmail {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(p.done)
+                    Text("Connected as \(email)").font(AppFont.caption).foregroundStyle(p.foreground)
+                } else {
+                    Image(systemName: "person.crop.circle.badge.questionmark").foregroundStyle(p.muted)
+                    Text("Not connected").font(AppFont.caption).foregroundStyle(p.muted)
+                }
+                Spacer()
+                Button(googleAuth.isConnected ? "Disconnect" : "Connect Google") {
+                    Task { await handleCalendarConnect() }
+                }
+                .buttonStyle(.bordered)
+                .tint(p.accent)
+                .controlSize(.small)
+                .disabled(calendarBusy)
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(p.surface)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.surfaceBorder, lineWidth: 1))
+            )
+
+            if let status = calendarStatus {
+                Text(status)
+                    .font(AppFont.caption)
+                    .foregroundStyle(p.muted)
+            }
+        }
+    }
+
+    private func handleCalendarConnect() async {
+        calendarBusy = true
+        defer { calendarBusy = false }
+        if googleAuth.isConnected {
+            await googleAuth.disconnect()
+            config.calendarSyncEnabled = false
+            config.calendarConnectedEmail = nil
+            calendarStatus = "Disconnected."
+        } else {
+            do {
+                let email = try await googleAuth.connect()
+                config.calendarConnectedEmail = email
+                calendarStatus = "Connected. You can switch on calendar blocking above."
+            } catch GoogleAuth.AuthError.cancelled {
+                calendarStatus = "Sign-in cancelled."
+            } catch {
+                calendarStatus = "Couldn't connect: \(error.localizedDescription)"
+            }
         }
     }
 

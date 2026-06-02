@@ -134,6 +134,39 @@ enum SelfTest {
         print("ROLLUP: OK")
     }
 
+    /// Headless check of the Google Calendar event building (title composition,
+    /// RFC3339 start/end spanning the block, busy/opaque, explicit timezone, no
+    /// default reminders). Pure formatting only: no auth, no network.
+    static func runCalendarTest() {
+        precondition(CalendarService.eventTitle(forGoal: "") == "Loft Hours",
+                     "CALENDAR: empty goal should be plain title")
+        precondition(CalendarService.eventTitle(forGoal: "  ") == "Loft Hours",
+                     "CALENDAR: whitespace goal should be plain title")
+        precondition(CalendarService.eventTitle(forGoal: "write the report") == "Loft Hours - write the report",
+                     "CALENDAR: goal should be appended after the dash")
+
+        let start = Date(timeIntervalSince1970: 1_748_620_200)
+        let body = CalendarService.eventBody(title: "Loft Hours - x", start: start, durationMin: 25, timeZone: "America/New_York")
+
+        precondition((body["summary"] as? String) == "Loft Hours - x", "CALENDAR: summary mismatch")
+        precondition((body["transparency"] as? String) == "opaque", "CALENDAR: should be busy/opaque")
+        let reminders = body["reminders"] as? [String: Any]
+        precondition((reminders?["useDefault"] as? Bool) == false, "CALENDAR: should suppress default reminders")
+
+        let startObj = body["start"] as? [String: Any]
+        let endObj = body["end"] as? [String: Any]
+        precondition((startObj?["timeZone"] as? String) == "America/New_York", "CALENDAR: start timezone mismatch")
+        precondition((endObj?["timeZone"] as? String) == "America/New_York", "CALENDAR: end timezone mismatch")
+
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime]
+        let startStr = startObj?["dateTime"] as? String
+        let endStr = endObj?["dateTime"] as? String
+        precondition(startStr == fmt.string(from: start), "CALENDAR: start dateTime mismatch")
+        precondition(endStr == fmt.string(from: start.addingTimeInterval(25 * 60)), "CALENDAR: end should be start + 25 min")
+        print("CALENDAR: OK")
+    }
+
     /// Headless check of the crash-safe orphan sweep: drop an active-session.json
     /// in a temp log dir, sweep it, and verify it moved into abandoned/.
     static func runOrphanSweepTest() {

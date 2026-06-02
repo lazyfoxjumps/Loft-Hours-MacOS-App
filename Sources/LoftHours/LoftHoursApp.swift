@@ -4,11 +4,14 @@ struct LoftHoursApp: App {
     @StateObject private var config: ConfigStore
     @StateObject private var theme = ThemeStore()
     @StateObject private var controller: SessionController
+    @StateObject private var googleAuth: GoogleAuth
 
     init() {
         let cfg = ConfigStore()
+        let auth = GoogleAuth()
         _config = StateObject(wrappedValue: cfg)
-        _controller = StateObject(wrappedValue: SessionController(config: cfg))
+        _googleAuth = StateObject(wrappedValue: auth)
+        _controller = StateObject(wrappedValue: SessionController(config: cfg, auth: auth))
     }
 
     var body: some Scene {
@@ -17,6 +20,7 @@ struct LoftHoursApp: App {
                 .environmentObject(controller)
                 .environmentObject(theme)
                 .environmentObject(config)
+                .environmentObject(googleAuth)
         }
         .windowResizability(.contentMinSize)
 

@@ -36,6 +36,7 @@ final class SessionController: ObservableObject {
     private let chimer = Chimer()
     private let notifier: Notifier
     private let config: ConfigStore?
+    private let auth: GoogleAuth?
     private let appManager = AppManager()
 
     // MARK: - Review (analytics) UI state
@@ -77,10 +78,11 @@ final class SessionController: ObservableObject {
     // Accumulated check-in notes across blocks
     private var checkInNotes: [String] = []
 
-    init(notifier: Notifier = Notifier(), store: SessionStore = SessionStore(), config: ConfigStore? = nil) {
+    init(notifier: Notifier = Notifier(), store: SessionStore = SessionStore(), config: ConfigStore? = nil, auth: GoogleAuth? = nil) {
         self.notifier = notifier
         self.store = store
         self.config = config
+        self.auth = auth
         self.reader = LogReader(config: store.config)
         // Crash safety: archive any session left behind by a crash, then start
         // fresh. Never auto-resume (skill spec §16).
@@ -242,6 +244,22 @@ final class SessionController: ObservableObject {
         phase = .running
         startTicker()
         persistActive()
+        logBlockToCalendar(minutes: minutes)
+    }
+
+    /// Add a busy event to Google Calendar for this block, if the user opted in
+    /// and connected an account. One event per block; finished blocks stay put.
+    /// Runs in a Task so the network call never delays the timer; the timer is
+    /// driven by a RunLoop Timer and keeps firing while this awaits. Best-effort:
+    /// failures are swallowed inside CalendarService.
+    private func logBlockToCalendar(minutes: Int) {
+        guard let config, config.calendarSyncEnabled, let auth, let s = session else { return }
+        let title = CalendarService.eventTitle(forGoal: s.goal)
+        let start = Date()
+        let service = CalendarService(auth: auth, calendarId: config.calendarId)
+        Task {
+            _ = await service.createBlockEvent(title: title, start: start, durationMin: minutes)
+        }
     }
 
     /// Write the crash-safe snapshot of the live session. Best-effort.

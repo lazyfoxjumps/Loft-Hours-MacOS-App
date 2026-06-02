@@ -11,6 +11,7 @@ enum EntryPoint {
             MainActor.assumeIsolated { SelfTest.runControllerFlow() }
             SelfTest.runRollupTest()
             SelfTest.runOrphanSweepTest()
+            SelfTest.runCalendarTest()
             return
         }
         LoftHoursApp.main()
