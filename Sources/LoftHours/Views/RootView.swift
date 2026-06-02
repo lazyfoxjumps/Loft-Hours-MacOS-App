@@ -7,7 +7,6 @@ struct RootView: View {
     @EnvironmentObject private var controller: SessionController
     @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var config: ConfigStore
-    @State private var showSettings = false
 
     private var isDone: Bool {
         if case .done = controller.phase { return true }
@@ -44,7 +43,7 @@ struct RootView: View {
         .frame(minWidth: 460, minHeight: 560)
         .task { controller.requestNotificationAuthorization() }
         .animation(.easeInOut(duration: 0.4), value: theme.selected)
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $controller.showSettings) {
             SettingsPanel()
                 .environmentObject(theme)
                 .environmentObject(config)
@@ -74,7 +73,7 @@ struct RootView: View {
             HStack {
                 Spacer()
                 Button {
-                    showSettings = true
+                    controller.showSettings = true
                 } label: {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 14))

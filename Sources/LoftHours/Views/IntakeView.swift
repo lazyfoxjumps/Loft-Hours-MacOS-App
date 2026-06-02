@@ -4,6 +4,12 @@ import SwiftUI
 struct IntakeView: View {
     @EnvironmentObject private var controller: SessionController
     @EnvironmentObject private var theme: ThemeStore
+    @EnvironmentObject private var config: ConfigStore
+
+    /// Whether the configured Focus shortcuts are present in the user's library.
+    /// nil = we couldn't check (e.g. the Shortcuts CLI isn't reachable), so we
+    /// stay quiet rather than nag with a false alarm.
+    @State private var shortcutsInstalled: Bool? = nil
 
     @State private var tasks: [String] = [""]
     @State private var deliverable: String = ""
@@ -87,6 +93,10 @@ struct IntakeView: View {
                     .controlSize(.small)
                     .tint(p.accent)
                     .help("See your weekly and monthly focus rollups.")
+                }
+
+                if shortcutsInstalled == false {
+                    shortcutBanner(p)
                 }
 
                 dndToggle(p)
@@ -194,7 +204,60 @@ struct IntakeView: View {
                 tasks = [suggestion]
                 resumed = true
             }
+            refreshShortcutStatus()
         }
+        // Re-check when the user comes back from Settings (where they'd install).
+        .onChange(of: controller.showSettings) {
+            if !controller.showSettings { refreshShortcutStatus() }
+        }
+    }
+
+    /// Look up whether both configured Focus shortcuts exist. Leaves the banner
+    /// hidden if we can't tell (CLI unreachable).
+    private func refreshShortcutStatus() {
+        guard let installed = FocusService.installedShortcutNames() else {
+            shortcutsInstalled = nil
+            return
+        }
+        shortcutsInstalled = installed.contains(config.focusShortcutOn)
+            && installed.contains(config.focusShortcutOff)
+    }
+
+    /// Shown above the DND toggle when the Focus shortcuts aren't installed yet,
+    /// since without them the toggle can't actually flip Do Not Disturb. Tapping
+    /// it opens Settings, where the one-tap installer lives.
+    private func shortcutBanner(_ p: Palette) -> some View {
+        Button {
+            controller.showSettings = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "moon.zzz.fill")
+                    .foregroundStyle(p.warn)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Quick thing before you start")
+                        .font(AppFont.callout)
+                        .foregroundStyle(p.foreground)
+                    Text("Your Do Not Disturb shortcut isn't set up yet, so the toggle below won't do much. Tap to install it in Settings, takes two seconds.")
+                        .font(AppFont.caption)
+                        .foregroundStyle(p.muted)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(AppFont.caption)
+                    .foregroundStyle(p.muted)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(p.warn.opacity(0.12))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(p.warn.opacity(0.35), lineWidth: 1))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func dndToggle(_ p: Palette) -> some View {

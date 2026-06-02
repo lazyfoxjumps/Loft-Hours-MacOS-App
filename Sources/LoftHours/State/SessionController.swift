@@ -39,6 +39,10 @@ final class SessionController: ObservableObject {
     private let appManager = AppManager()
 
     // MARK: - Review (analytics) UI state
+    /// Whether the Settings sheet is shown. Hoisted here (from RootView's local
+    /// state) so screens like Intake can open Settings, e.g. from the
+    /// "shortcuts not installed yet" banner.
+    @Published var showSettings: Bool = false
     /// Whether the in-app Review sheet is shown (over the main window).
     @Published var showReview: Bool = false
     /// Which window the Review sheet is currently showing.
