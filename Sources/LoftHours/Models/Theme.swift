@@ -79,11 +79,15 @@ extension ThemePreset {
                     accent: "6b8e5a", background: "1a201a", warn: "c98a3f", breakHex: "a8b89f", done: "a86b4f"),
         ThemePreset(id: "candlelit-nocturne", name: "Candlelit Nocturne",
                     accent: "d4a755", background: "0c1424", warn: "cc6633", breakHex: "6a89a8", done: "b8a888"),
+        // Reworked to read as a softer milk-coffee palette: a lighter, foamier
+        // linen background and a mid-tone mocha accent, so it no longer reads as
+        // a near-twin of Light Academia (yellow-cream bg + dark espresso accent).
         ThemePreset(id: "linen-latte", name: "Linen & Latte",
-                    accent: "4a2e1f", background: "ede2cf", warn: "c47b3d", breakHex: "9aa490", done: "b08374"),
+                    accent: "9c6644", background: "f4ecde", warn: "cf9a4e", breakHex: "a3a890", done: "bb7a5a"),
     ]
 
-    static let `default` = all[0]
+    /// New users land on Light Academia; existing users keep whatever they saved.
+    static let `default` = all.first { $0.id == "light-academia" } ?? all[0]
 
     static func with(id: String) -> ThemePreset {
         all.first { $0.id == id } ?? .default
