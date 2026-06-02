@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Loft Hours" width="120">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo.svg" alt="Loft Hours" width="280">
+  </picture>
 </p>
 
 <h1 align="center">Loft Hours</h1>
