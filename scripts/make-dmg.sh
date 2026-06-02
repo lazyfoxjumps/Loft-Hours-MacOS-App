@@ -14,11 +14,11 @@ cd "$ROOT"
 
 APP="$ROOT/Loft Hours.app"
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")"
-VOL_NAME="Loft Hours $VERSION beta"
+VOL_NAME="Loft Hours $VERSION"
 
 OUT="$ROOT/dist"
 mkdir -p "$OUT"
-DMG_PATH="$OUT/Loft-Hours-$VERSION-beta.dmg"
+DMG_PATH="$OUT/Loft-Hours-$VERSION.dmg"
 rm -f "$DMG_PATH"
 
 # Stage the .app plus an /Applications symlink so users can drag-to-install.
@@ -29,13 +29,13 @@ ln -s /Applications "$STAGING/Applications"
 # Bundle a plain-text install guide so first-time openers know the Gatekeeper
 # steps for an un-notarized build.
 cat > "$STAGING/INSTALL.txt" <<TXT
-Loft Hours $VERSION (beta)
+Loft Hours $VERSION
 
 INSTALL
 1. Drag "Loft Hours" onto the Applications folder in this window.
 
 FIRST LAUNCH (one time only)
-This beta is not notarized by Apple, so macOS will warn that it is from an
+This app is not notarized by Apple yet, so macOS will warn that it is from an
 unidentified developer the first time you open it. To get past that:
 
   - Open your Applications folder, right-click "Loft Hours", and choose Open.
@@ -51,7 +51,7 @@ REQUIREMENTS
   - macOS 14 (Sonoma) or later
   - Apple Silicon Mac (M1/M2/M3/M4). This build does not run on Intel Macs.
 
-KNOWN ISSUES (beta)
+KNOWN ISSUES
   - The app icon may appear blank on the left of system notifications. This is
     a side effect of the build not being signed yet and does not affect the app.
 TXT

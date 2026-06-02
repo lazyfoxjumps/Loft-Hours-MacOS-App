@@ -24,9 +24,7 @@ Loft Hours is built for exactly that. It's a digital **body double**, that "some
 
 It does **not** nag you. It does **not** gamify your life with streaks and confetti and guilt. It quietly sets up your work session, stays out of your way while you work, and then shows you the receipts of what you actually did. That's it.
 
-> **Heads up:** this is a **beta** (version 0.9.1). It works, your friends can use it, but a few rough edges are expected. See [Known issues](#known-issues-beta-stuff) below.
->
-> *New in 0.9.1:* a warmer **Light Academia** default theme (and a redone Linen & Latte), a friendlier voice throughout, rotating encouragement and body-care nudges on breaks, multiple "Other" rows at wrap-up, and a home-screen heads-up if your Do Not Disturb shortcut isn't set up yet.
+> **Heads up:** Loft Hours is **version 1.0**. It isn't notarized by Apple yet, so the very first time you open it macOS will ask you to confirm. That's a one-time step, walked through [below](#apple-wont-let-me-open-it-the-gatekeeper-bit).
 
 ---
 
@@ -60,10 +58,12 @@ The whole vibe: **gentle structure, zero shame.**
 
 ## Features
 
+- 👋 **A welcome that knows your name** — tell Loft Hours your name once when you first open it, and the home screen greets you with a short, rotating hello that changes with the day (a nudge to start the week on Monday, a lift toward Friday, something slower on the weekend). Change your name anytime in Settings.
 - 🎯 **Multi-task intake** — line up everything you want to tackle, not just one thing.
 - ⭕ **Visual focus timer** — a calm circular countdown so you always know where you are in the block.
 - 🔕 **Do Not Disturb toggle** — flip your Mac's Focus mode on/off right from the app (one-time setup, see [below](#optional-do-not-disturb--focus-setup)). If you haven't set it up yet, the home screen gently points you to it instead of failing silently.
 - 🚪 **App wrangling** — auto-close the apps that distract you when a session starts, and reopen them after if you want.
+- 📅 **Google Calendar blocking (optional)** — connect your Google account once, and every focus block drops a "busy" event on your calendar for the length of the timer, titled "Loft Hours - your tasks", so the people who share your calendar can see you're heads-down. Finished blocks stay on your calendar.
 - ☕ **Break check-ins** — a rotating mix of encouragement and gentle body-care reminders (drink water, stretch, rest your eyes) between blocks, never naggy.
 - ✅ **Done-checklist wrap-up** — check off what you finished, and add as many extra "Other" things you did as you want.
 - 📝 **Automatic session logs** — every session is saved as a plain Markdown file in `~/Documents/study-log/`. They're yours, readable in any text app, forever.
@@ -71,7 +71,7 @@ The whole vibe: **gentle structure, zero shame.**
 - 🎨 **Themes** — opens in a warm **Light Academia** look, with five more cozy palettes a click away (Dark Academia, Forest Cottagecore, Candlelit Nocturne, Linen & Latte, and Classic Midnight).
 - 💾 **Crash-safe + resume** — if your Mac sleeps or quits mid-session, Loft Hours picks up where you left off and can pre-fill your next session from last time.
 
-> Your data stays on your machine. There's no account, no cloud, no tracking, no internet required. The logs are just Markdown files you own.
+> Your data stays on your machine. There's no account, no cloud, no tracking, and no internet required. The one exception is the **optional** Google Calendar blocking above: if (and only if) you turn it on and connect your account, Loft Hours talks to Google to add your focus blocks. Leave it off and nothing ever leaves your computer. The logs are always just Markdown files you own.
 
 ---
 
@@ -79,10 +79,10 @@ The whole vibe: **gentle structure, zero shame.**
 
 ### What you need
 - A Mac running **macOS 14 (Sonoma) or newer**
-- An **Apple Silicon Mac** (M1, M2, M3, or M4). This beta does **not** run on older Intel Macs.
+- An **Apple Silicon Mac** (M1, M2, M3, or M4). Loft Hours does **not** run on older Intel Macs.
 
 ### Steps
-1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-0.9.1-beta.dmg`.
+1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-1.0.dmg`.
 2. Double-click the downloaded `.dmg` to open it.
 3. **Drag the Loft Hours icon onto the Applications folder** in the window that pops up.
 4. Open your **Applications** folder and try to launch Loft Hours.
@@ -93,7 +93,7 @@ If it opens, you're done! 🎉 If macOS throws up a scary warning instead, that'
 
 ## "Apple won't let me open it!" (the Gatekeeper bit)
 
-Don't worry, the app is fine. This warning shows up because Loft Hours is an indie beta that hasn't paid Apple's $99/year "notarization" fee yet. macOS is cautious about apps it doesn't recognize, so it puts up a gate the **first time only**. Here's how to get through it.
+Don't worry, the app is fine. This warning shows up because Loft Hours is an indie app that hasn't paid Apple's $99/year "notarization" fee yet. macOS is cautious about apps it doesn't recognize, so it puts up a gate the **first time only**. Here's how to get through it.
 
 ### The easy way (most Macs)
 1. Open your **Applications** folder.
@@ -136,7 +136,7 @@ That's it, the DND toggle now works. Don't want any of this? Just leave the togg
 
 ---
 
-## Known issues (beta stuff)
+## Known issues
 
 - 🖼️ The app icon may show up **blank** on the left side of notifications. Cosmetic only, fixed once the app gets signed. Sounds and chimes work regardless.
 - 🔔 Notification permission **may not stick** between launches on this unsigned build. Also a signing thing, coming in a later release.
@@ -148,7 +148,7 @@ Found something else? [Open an issue](../../issues), it really helps.
 
 ## A quick note on privacy
 
-Loft Hours runs entirely on your Mac. No sign-up, no servers, no analytics, nothing leaves your computer. Your session logs are plain Markdown files in `~/Documents/study-log/` that you can read, edit, back up, or delete anytime.
+Loft Hours runs entirely on your Mac. No sign-up, no servers, no analytics. The only time anything leaves your computer is if you choose to turn on the optional Google Calendar blocking and connect your account, in which case Loft Hours adds your focus blocks to your Google Calendar (and nothing else). Leave that feature off and the app is fully offline. Your session logs are plain Markdown files in `~/Documents/study-log/` that you can read, edit, back up, or delete anytime.
 
 ---
 
