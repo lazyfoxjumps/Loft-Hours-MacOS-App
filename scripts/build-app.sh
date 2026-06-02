@@ -50,7 +50,21 @@ if [ -d "$ROOT/Resources/Shortcuts" ]; then
   cp -R "$ROOT/Resources/Shortcuts" "$APP/Contents/Resources/Shortcuts"
 fi
 
-# Ad-hoc sign so macOS will launch it without Gatekeeper friction.
-codesign --force --sign - "$APP" >/dev/null 2>&1 || true
+# Sign the bundle so macOS will launch it without Gatekeeper friction.
+#
+# Entitlements are applied ONLY when signing with a real identity (Phase 5,
+# via CODESIGN_IDENTITY="Developer ID Application: ..."). They are deliberately
+# NOT passed to the default ad-hoc signature: restricted entitlements like
+# com.apple.developer.usernotifications.time-sensitive are rejected by the OS
+# under an ad-hoc signature and the process is SIGKILLed at launch. So the
+# ad-hoc beta stays launchable, and the entitlements activate the moment a
+# proper Developer ID is wired in.
+ENTITLEMENTS="$ROOT/LoftHours.entitlements"
+IDENTITY="${CODESIGN_IDENTITY:--}"   # default: "-" (ad-hoc)
+if [ "$IDENTITY" != "-" ] && [ -f "$ENTITLEMENTS" ]; then
+  codesign --force --options runtime --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP" >/dev/null 2>&1 || true
+else
+  codesign --force --sign "$IDENTITY" "$APP" >/dev/null 2>&1 || true
+fi
 
 echo "Done: $APP"

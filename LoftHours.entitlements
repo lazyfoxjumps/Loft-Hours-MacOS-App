@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Loft Hours code-signing entitlements.
+
+	  Time-sensitive notifications: lets our focus cues (block done, halfway,
+	  last minute, break over) pierce the Focus/Do Not Disturb that the app
+	  itself turns on for a session. Without this, the app's own DND would mute
+	  the very nudges the user relies on. The code already sets
+	  content.interruptionLevel = .timeSensitive (see Services/Notifier.swift);
+	  this entitlement is what actually authorizes that level to break through.
+
+	  IMPORTANT: this entitlement is only honored on a build signed with a
+	  provisioning profile that carries the matching capability (a Developer ID
+	  or App Store distribution profile, set up in Phase 5). On the current
+	  unsigned / ad-hoc beta it is inert and time-sensitive notifications quietly
+	  degrade to ordinary banners. Wiring it now so signing is a one-line flip
+	  later, not a code change.
+	-->
+	<key>com.apple.developer.usernotifications.time-sensitive</key>
+	<true/>
+
+	<!--
+	  App Store sandbox entitlements are deferred until/unless we ship to the
+	  Mac App Store (see PHASE5-GITHUB-BETA-PLAN.md and the handoff). When that
+	  happens, add here:
+	    com.apple.security.app-sandbox (true)
+	    com.apple.security.files.user-selected.read-write (for the log folder)
+	  and migrate config off UserDefaults to the security-scoped path. Left out
+	  for now so the GitHub beta keeps its current non-sandboxed behavior.
+	-->
+</dict>
+</plist>
