@@ -135,15 +135,13 @@ final class SessionController: ObservableObject {
         phase == .running && remaining > 0 && remaining <= 60
     }
 
-    /// A rotating between-breaks reminder (water / stand / eyes).
+    /// A rotating between-breaks reminder. Gentle body-care nudges in the app's
+    /// study-with-me voice; cycles by block so each break feels a little
+    /// different. See `Messages.breakReminders`.
     var currentReminder: String {
-        let reminders = [
-            "Drink some water.",
-            "Stand up, give the legs a stretch.",
-            "Look 20 feet away for 20 seconds, the eyes will thank you.",
-        ]
-        let idx = max(0, blocks - 1) % reminders.count
-        return reminders[idx]
+        let pool = Messages.breakReminders
+        let idx = max(0, blocks - 1) % pool.count
+        return pool[idx]
     }
 
     // MARK: - Intake -> focus
@@ -296,7 +294,7 @@ final class SessionController: ObservableObject {
         stopTicker()
         remaining = 0
         chimer.play(.complete)
-        notifier.notify(title: "Loft Hours", body: "Block complete. Take a breath.")
+        notifier.notify(title: "Loft Hours", body: Messages.blockComplete.pick())
         startBreak()
     }
 
@@ -400,12 +398,12 @@ final class SessionController: ObservableObject {
         if !halfwayFired, blockTotal > 0, remaining > 0, remaining <= blockTotal / 2 {
             halfwayFired = true
             chimer.play(.halfway)
-            notifier.notify(title: "Loft Hours", body: "Halfway there.")
+            notifier.notify(title: "Loft Hours", body: Messages.halfway.pick())
         }
         if !lastMinuteFired, remaining > 0, remaining <= 60 {
             lastMinuteFired = true
             chimer.play(.lastMinute)
-            notifier.notify(title: "Loft Hours", body: "One minute left, wrap up the thought.")
+            notifier.notify(title: "Loft Hours", body: Messages.lastMinute.pick())
         }
         if remaining <= 0 {
             finishBlock()
@@ -435,7 +433,7 @@ final class SessionController: ObservableObject {
             isBreakOver = true
             stopBreakTicker()
             chimer.play(.halfway)
-            notifier.notify(title: "Loft Hours", body: "Break's over, ready when you are.")
+            notifier.notify(title: "Loft Hours", body: Messages.breakOver.pick())
         }
     }
 }
