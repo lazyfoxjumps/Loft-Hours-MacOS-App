@@ -7,10 +7,21 @@ struct WrapUpView: View {
 
     /// Parallel to `planTasks`: which intake tasks the user checked off.
     @State private var checked: [Bool] = []
-    @State private var otherDelivered: String = ""
+    /// Extra "done" things the user adds at wrap-up that weren't in the intake
+    /// plan. Each "+ Other" tap appends a fresh editable row. Stable ids so the
+    /// rows keep their text and focus when one above them is removed.
+    @State private var otherTasks: [OtherTask] = []
+    @FocusState private var focusedOther: OtherTask.ID?
     @State private var nextStep: String = ""
     @State private var energyEnd: Energy = .medium
     @State private var reflection: String = ""
+
+    /// A user-added "other" done item. Pre-checked by definition (they're only
+    /// here because the user did them), editable, removable.
+    private struct OtherTask: Identifiable {
+        let id = UUID()
+        var text: String = ""
+    }
 
     /// The intake plan to show as a checklist. Falls back to the joined goal for
     /// sessions logged before multi-task support (or resumed ones).
@@ -42,10 +53,10 @@ struct WrapUpView: View {
                         ForEach(planTasks.indices, id: \.self) { idx in
                             checkRow(planTasks[idx], index: idx, palette: p)
                         }
-                        TextField("Other", text: $otherDelivered, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
-                            .lineLimit(1...3)
-                            .padding(.top, 2)
+                        ForEach($otherTasks) { $task in
+                            otherRow($task, palette: p)
+                        }
+                        addOtherButton(p)
                     }
                 }
 
@@ -74,9 +85,12 @@ struct WrapUpView: View {
                         let done = planTasks.indices
                             .filter { checked.indices.contains($0) && checked[$0] }
                             .map { planTasks[$0] }
+                        let others = otherTasks
+                            .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
+                            .filter { !$0.isEmpty }
                         controller.completeWrapUp(
                             completedTasks: done,
-                            otherDelivered: otherDelivered.trimmingCharacters(in: .whitespacesAndNewlines),
+                            otherDelivered: others.joined(separator: "; "),
                             nextStep: nextStep.trimmingCharacters(in: .whitespacesAndNewlines),
                             energyEnd: energyEnd,
                             reflection: reflection.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -135,6 +149,51 @@ struct WrapUpView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// An editable, pre-checked row for a user-added "other" done item. The
+    /// checkbox is filled (it's done by definition) and the trailing minus
+    /// removes the row.
+    @ViewBuilder
+    private func otherRow(_ task: Binding<OtherTask>, palette p: Palette) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "checkmark.square.fill")
+                .foregroundStyle(p.accent)
+            TextField("Something else you got done", text: task.text, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+                .lineLimit(1...3)
+                .focused($focusedOther, equals: task.wrappedValue.id)
+            Button {
+                otherTasks.removeAll { $0.id == task.wrappedValue.id }
+            } label: {
+                Image(systemName: "minus.circle")
+                    .foregroundStyle(p.muted)
+            }
+            .buttonStyle(.plain)
+            .help("Remove this row.")
+        }
+    }
+
+    /// Adds a fresh empty "other" row and drops focus straight into it, so the
+    /// user can start typing the moment they tap.
+    @ViewBuilder
+    private func addOtherButton(_ p: Palette) -> some View {
+        Button {
+            let new = OtherTask()
+            otherTasks.append(new)
+            focusedOther = new.id
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(p.accent)
+                Text("Other")
+                    .font(AppFont.callout)
+                    .foregroundStyle(p.muted)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 2)
     }
 
     @ViewBuilder
