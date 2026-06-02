@@ -20,6 +20,15 @@ enum AppImages {
         return img
     }()
 
+    /// The horizontal Loft Hours logo + wordmark used as the footer mark. Vector
+    /// (SVG), so it stays crisp at any size; template-rendered so it recolors
+    /// with the active theme just like the menu-bar icon.
+    static let wordmark: NSImage? = {
+        guard let img = bundled("Wordmark", ext: "svg") else { return nil }
+        img.isTemplate = true
+        return img
+    }()
+
     /// URL of the notification thumbnail icon, for UNNotificationAttachment.
     static var notificationIconURL: URL? {
         Bundle.main.url(forResource: "NotificationIcon", withExtension: "png", subdirectory: "Images")

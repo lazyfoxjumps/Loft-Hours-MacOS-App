@@ -60,10 +60,21 @@ struct RootView: View {
     private func footerMark(_ p: Palette) -> some View {
         VStack {
             Spacer()
-            Text("Loft Hours")
-                .font(AppFont.footerMark)
-                .foregroundStyle(p.muted)
-                .padding(.bottom, 12)
+            Group {
+                if let mark = AppImages.wordmark {
+                    Image(nsImage: mark)
+                        .resizable()
+                        .renderingMode(.template)
+                        .scaledToFit()
+                        .frame(height: 36)
+                        .foregroundStyle(p.muted)
+                } else {
+                    Text("Loft Hours")
+                        .font(AppFont.footerMark)
+                        .foregroundStyle(p.muted)
+                }
+            }
+            .padding(.bottom, 12)
         }
         .allowsHitTesting(false)
     }
