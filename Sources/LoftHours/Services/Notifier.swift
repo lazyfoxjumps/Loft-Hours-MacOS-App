@@ -10,11 +10,11 @@ final class Notifier {
     private var authorized = false
 
     func requestAuthorization() {
-        // On by default: ask on first launch (RootView calls this on appear),
-        // and request the time-sensitive option up front so our cues are allowed
-        // to break through the Focus/DND the app itself turned on.
-        let options: UNAuthorizationOptions = [.alert, .sound, .timeSensitive]
-        UNUserNotificationCenter.current().requestAuthorization(options: options) { [weak self] granted, _ in
+        // On by default: ask on first launch (RootView calls this on appear).
+        // Breaking through Focus/DND is driven by the time-sensitive *entitlement*
+        // plus content.interruptionLevel below, not an authorization option
+        // (the .timeSensitive option was deprecated in macOS 12).
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, _ in
             Task { @MainActor in self?.authorized = granted }
         }
     }

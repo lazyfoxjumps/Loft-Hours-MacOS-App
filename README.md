@@ -24,7 +24,9 @@ Loft Hours is built for exactly that. It's a digital **body double**, that "some
 
 It does **not** nag you. It does **not** gamify your life with streaks and confetti and guilt. It quietly sets up your work session, stays out of your way while you work, and then shows you the receipts of what you actually did. That's it.
 
-> **Heads up:** this is a **beta** (version 0.9.0). It works, your friends can use it, but a few rough edges are expected. See [Known issues](#known-issues-beta-stuff) below.
+> **Heads up:** this is a **beta** (version 0.9.1). It works, your friends can use it, but a few rough edges are expected. See [Known issues](#known-issues-beta-stuff) below.
+>
+> *New in 0.9.1:* a warmer **Light Academia** default theme (and a redone Linen & Latte), a friendlier voice throughout, rotating encouragement and body-care nudges on breaks, multiple "Other" rows at wrap-up, and a home-screen heads-up if your Do Not Disturb shortcut isn't set up yet.
 
 ---
 
@@ -80,7 +82,7 @@ The whole vibe: **gentle structure, zero shame.**
 - An **Apple Silicon Mac** (M1, M2, M3, or M4). This beta does **not** run on older Intel Macs.
 
 ### Steps
-1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-0.9.0-beta.dmg`.
+1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-0.9.1-beta.dmg`.
 2. Double-click the downloaded `.dmg` to open it.
 3. **Drag the Loft Hours icon onto the Applications folder** in the window that pops up.
 4. Open your **Applications** folder and try to launch Loft Hours.
