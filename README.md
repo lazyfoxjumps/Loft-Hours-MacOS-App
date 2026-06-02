@@ -51,7 +51,7 @@ The whole vibe: **gentle structure, zero shame.**
 3. **Set the room (optional).** Want Loft Hours to flip on Do Not Disturb and close Slack/Twitter/whatever for you? Say the word. Don't want that? Skip it. Totally up to you.
 4. **Work.** A clean focus timer appears. The app goes quiet and lets you cook. Soft chimes mark the halfway point and the last minute.
 5. **Take your break.** When the block ends, it checks in: "How's it going?" You can log a note or just breathe.
-6. **Wrap up.** Tick off what you finished (and add anything extra you did). Loft Hours saves a tidy little log of the session to your computer.
+6. **Wrap up.** Tick off what you finished, and add as many extra "Other" things you did as you want. Loft Hours saves a tidy little log of the session to your computer.
 7. **Go again or call it.** Start another block, or finish for the day.
 
 ---
@@ -60,13 +60,13 @@ The whole vibe: **gentle structure, zero shame.**
 
 - 🎯 **Multi-task intake** — line up everything you want to tackle, not just one thing.
 - ⭕ **Visual focus timer** — a calm circular countdown so you always know where you are in the block.
-- 🔕 **Do Not Disturb toggle** — flip your Mac's Focus mode on/off right from the app (one-time setup, see [below](#optional-do-not-disturb--focus-setup)).
+- 🔕 **Do Not Disturb toggle** — flip your Mac's Focus mode on/off right from the app (one-time setup, see [below](#optional-do-not-disturb--focus-setup)). If you haven't set it up yet, the home screen gently points you to it instead of failing silently.
 - 🚪 **App wrangling** — auto-close the apps that distract you when a session starts, and reopen them after if you want.
-- ☕ **Break check-ins** — friendly nudges between blocks, never naggy.
-- ✅ **Done-checklist wrap-up** — check off what you finished; capture the "oh and I also did this" stuff too.
+- ☕ **Break check-ins** — a rotating mix of encouragement and gentle body-care reminders (drink water, stretch, rest your eyes) between blocks, never naggy.
+- ✅ **Done-checklist wrap-up** — check off what you finished, and add as many extra "Other" things you did as you want.
 - 📝 **Automatic session logs** — every session is saved as a plain Markdown file in `~/Documents/study-log/`. They're yours, readable in any text app, forever.
 - 📊 **Weekly & monthly reviews** — see your focused hours, your streak, when you do your best work, and patterns you'd never notice on your own.
-- 🎨 **Themes** — Classic Midnight plus a handful of cozy "dark academia" looks.
+- 🎨 **Themes** — opens in a warm **Light Academia** look, with five more cozy palettes a click away (Dark Academia, Forest Cottagecore, Candlelit Nocturne, Linen & Latte, and Classic Midnight).
 - 💾 **Crash-safe + resume** — if your Mac sleeps or quits mid-session, Loft Hours picks up where you left off and can pre-fill your next session from last time.
 
 > Your data stays on your machine. There's no account, no cloud, no tracking, no internet required. The logs are just Markdown files you own.
@@ -119,7 +119,7 @@ Then open the app normally. (No idea what a terminal is? Totally fine, use one o
 
 ## Optional: Do Not Disturb / Focus setup
 
-The DND toggle works by running a little macOS **Shortcut** (Apple doesn't let apps flip Focus mode directly). Good news: **you don't have to build anything by hand.** Loft Hours can install the ready-made shortcuts for you in one click:
+The DND toggle works by running a little macOS **Shortcut** (Apple doesn't let apps flip Focus mode directly). Good news: **you don't have to build anything by hand.** Loft Hours can install the ready-made shortcuts for you in one click. (If you ever flip the toggle before this is set up, the home screen will show a little reminder pointing you right here.)
 
 1. Open Loft Hours and click the **gear (Settings)** icon.
 2. Go to the **Environment** tab.
