@@ -19,6 +19,9 @@ struct IntakeView: View {
     @FocusState private var goalFocused: Bool
     /// True once the goal field was prefilled from the previous session's next step.
     @State private var resumed: Bool = false
+    /// The cycling, name-personalized greeting shown in place of "Loft Hours".
+    /// Computed once when the home screen appears so it stays stable while here.
+    @State private var welcomeText: String = ""
 
     enum DurationChoice: Hashable {
         case m25, m50, m90, custom
@@ -76,10 +79,10 @@ struct IntakeView: View {
                 VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Loft Hours")
+                        Text(welcomeText.isEmpty ? "Loft Hours" : welcomeText)
                             .font(AppFont.wordmark)
                             .foregroundStyle(p.foreground)
-                        Text("Hey, glad you're here. Let's get you set up.")
+                        Text("Welcome to the loft. Let's get you set up.")
                             .foregroundStyle(p.muted)
                     }
                     Spacer()
@@ -205,11 +208,26 @@ struct IntakeView: View {
                 resumed = true
             }
             refreshShortcutStatus()
+            refreshWelcome()
         }
         // Re-check when the user comes back from Settings (where they'd install).
         .onChange(of: controller.showSettings) {
             if !controller.showSettings { refreshShortcutStatus() }
         }
+        // Refresh the greeting immediately if the name is changed in Settings.
+        .onChange(of: config.userName) { refreshWelcome() }
+    }
+
+    /// Pick a fresh, name-personalized greeting, avoiding an immediate repeat of
+    /// the last one shown. Stores the chosen template so the next open differs.
+    private func refreshWelcome() {
+        let result = Messages.welcome(
+            name: config.userName,
+            date: Date(),
+            avoiding: config.lastWelcomeTemplate.isEmpty ? nil : config.lastWelcomeTemplate
+        )
+        welcomeText = result.text
+        config.lastWelcomeTemplate = result.template
     }
 
     /// Look up whether both configured Focus shortcuts exist. Leaves the banner

@@ -51,6 +51,105 @@ enum Messages {
         "Rest your eyes for a sec, you've been staring.",
         "Sip some water and wiggle your fingers loose.",
     ]
+
+    // MARK: - Home-screen welcome greeting
+
+    /// Cycling greeting that replaces the "Loft Hours" wordmark on the home
+    /// screen, personalized with the user's name. Every line carries the `{name}`
+    /// placeholder and stays to a maximum of three words (name included). Some
+    /// days get their own pool (Monday's fresh-week push, a gentle midweek
+    /// steadier, Friday's near-weekend lift, a slower weekend); the rest of the
+    /// week draws from the general pool. See `docs/VOICE-AND-TONE.md`.
+
+    static let welcomeMonday = [
+        "New week, {name}!",
+        "Fresh start, {name}.",
+        "Onward, {name}!",
+        "Let's begin, {name}.",
+        "Week one, {name}.",
+        "Clean slate, {name}.",
+        "Let's roll, {name}.",
+        "Monday momentum, {name}.",
+    ]
+
+    /// Midweek, encouraging without the on-the-nose "hump day" line.
+    static let welcomeWednesday = [
+        "Midweek, {name}.",
+        "Steady on, {name}.",
+        "Keep going, {name}.",
+        "Halfway in, {name}.",
+        "Hold steady, {name}.",
+        "Pace yourself, {name}.",
+        "Cresting it, {name}.",
+        "Downhill soon, {name}.",
+    ]
+
+    static let welcomeFriday = [
+        "Finally Friday, {name}!",
+        "TGIF, {name}!",
+        "Friyay, {name}!",
+        "Almost weekend, {name}!",
+        "Home stretch, {name}.",
+        "Last push, {name}!",
+        "Nearly there, {name}.",
+        "So close, {name}.",
+    ]
+
+    /// Saturday and Sunday: slower, softer, permission to rest.
+    static let welcomeWeekend = [
+        "Breathe, {name}.",
+        "Rest up, {name}.",
+        "Slow down, {name}.",
+        "Weekend mode, {name}.",
+        "Easy now, {name}.",
+        "No rush, {name}.",
+        "Take five, {name}.",
+        "Unwind, {name}.",
+    ]
+
+    /// Tuesday, Thursday, and the fallback for any day.
+    static let welcomeGeneral = [
+        "Welcome back, {name}.",
+        "Hey, {name}.",
+        "Let's go, {name}!",
+        "Hello, {name}.",
+        "Ready, {name}?",
+        "Let's focus, {name}.",
+        "You're here, {name}.",
+        "Hi again, {name}.",
+        "Welcome, {name}!",
+    ]
+
+    /// The welcome pool for a `Calendar` weekday (1 = Sunday ... 7 = Saturday).
+    static func welcomePool(forWeekday weekday: Int) -> [String] {
+        switch weekday {
+        case 1, 7: return welcomeWeekend   // Sun, Sat
+        case 2:    return welcomeMonday
+        case 4:    return welcomeWednesday
+        case 6:    return welcomeFriday
+        default:   return welcomeGeneral   // Tue, Thu
+        }
+    }
+
+    /// Pick a greeting for `name` on `date`, avoiding `avoiding` (the last
+    /// template shown) so it never repeats back to back. Returns the raw
+    /// template (store this to feed `avoiding` next time) and the rendered line.
+    static func welcome(
+        name: String,
+        date: Date,
+        calendar: Calendar = .current,
+        avoiding: String? = nil
+    ) -> (template: String, text: String) {
+        let weekday = calendar.component(.weekday, from: date)
+        var pool = welcomePool(forWeekday: weekday)
+        if let avoiding, pool.count > 1 {
+            pool.removeAll { $0 == avoiding }
+        }
+        let template = pool.randomElement() ?? "Welcome, {name}!"
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = template.replacingOccurrences(of: "{name}", with: trimmed)
+        return (template, text)
+    }
 }
 
 extension Array where Element == String {

@@ -13,9 +13,25 @@ struct RootView: View {
         return false
     }
 
+    /// First run: no name captured yet. Gate everything behind onboarding so the
+    /// home-screen greeting always has a name to use.
+    private var needsOnboarding: Bool {
+        config.userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
+        if needsOnboarding {
+            OnboardingView()
+                .environmentObject(theme)
+                .environmentObject(config)
+        } else {
+            mainContent
+        }
+    }
+
+    private var mainContent: some View {
         let p = theme.palette
-        ZStack {
+        return ZStack {
             (isDone ? p.doneBackground : p.background)
                 .ignoresSafeArea()
 

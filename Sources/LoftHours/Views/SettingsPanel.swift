@@ -21,6 +21,10 @@ struct SettingsPanel: View {
     /// Transient status under the Calendar connect button (errors / progress).
     @State private var calendarStatus: String? = nil
     @State private var calendarBusy = false
+    /// Local editing buffer for the user's name, mirrored from config on appear.
+    /// Committed back only when non-empty so the home greeting never loses a name
+    /// (and the onboarding gate never re-triggers from an empty field).
+    @State private var editName: String = ""
 
     /// Whether both configured Focus shortcuts exist. Nil when we can't tell.
     private var focusShortcutsReady: Bool? {
@@ -129,6 +133,8 @@ struct SettingsPanel: View {
     private func environmentContent(_ p: Palette) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                nameSection(p)
+                Divider().background(p.surfaceBorder)
                 focusSection(p)
                 Divider().background(p.surfaceBorder)
                 appsSection(p)
@@ -141,7 +147,45 @@ struct SettingsPanel: View {
         }
         .onAppear {
             if appsIndex.isEmpty { appsIndex = InstalledAppsIndex.scan() }
+            editName = config.userName
         }
+    }
+
+    /// True when the edited name is non-empty and differs from what's saved.
+    private var nameChanged: Bool {
+        let trimmed = editName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && trimmed != config.userName
+    }
+
+    private func nameSection(_ p: Palette) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Your name")
+                .font(AppFont.headline)
+                .foregroundStyle(p.foreground)
+
+            Text("Used in the welcome greeting on the home screen.")
+                .font(AppFont.caption)
+                .foregroundStyle(p.muted)
+
+            HStack(spacing: 8) {
+                TextField("Your name", text: $editName)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 200)
+                    .onSubmit(commitName)
+                Button("Save", action: commitName)
+                    .buttonStyle(.bordered)
+                    .tint(p.accent)
+                    .controlSize(.small)
+                    .disabled(!nameChanged)
+            }
+        }
+    }
+
+    /// Persist the edited name, trimmed and capped, but only when non-empty.
+    private func commitName() {
+        let trimmed = String(editName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(20))
+        guard !trimmed.isEmpty else { return }
+        if trimmed != config.userName { config.userName = trimmed }
     }
 
     private func focusSection(_ p: Palette) -> some View {

@@ -40,6 +40,18 @@ final class ConfigStore: ObservableObject {
         didSet { defaults.set(calendarConnectedEmail, forKey: Keys.calendarConnectedEmail) }
     }
 
+    // The user's first name, captured on first launch and shown in the cycling
+    // home-screen greeting. Empty until onboarding completes (RootView gates on
+    // it). Editable later in Settings > Environment.
+    @Published var userName: String {
+        didSet { defaults.set(userName, forKey: Keys.userName) }
+    }
+    /// The last welcome template shown, so the next pick avoids an immediate
+    /// repeat across app opens. Stored as the raw "{name}" template, not rendered.
+    @Published var lastWelcomeTemplate: String {
+        didSet { defaults.set(lastWelcomeTemplate, forKey: Keys.lastWelcomeTemplate) }
+    }
+
     private let defaults: UserDefaults
 
     private enum Keys {
@@ -53,6 +65,8 @@ final class ConfigStore: ObservableObject {
         static let calendarSyncEnabled = "lofthours.calendar.enabled"
         static let calendarId = "lofthours.calendar.id"
         static let calendarConnectedEmail = "lofthours.calendar.email"
+        static let userName = "lofthours.user.name"
+        static let lastWelcomeTemplate = "lofthours.welcome.last"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -71,5 +85,7 @@ final class ConfigStore: ObservableObject {
         self.calendarSyncEnabled = defaults.bool(forKey: Keys.calendarSyncEnabled)
         self.calendarId = defaults.string(forKey: Keys.calendarId) ?? "primary"
         self.calendarConnectedEmail = defaults.string(forKey: Keys.calendarConnectedEmail)
+        self.userName = defaults.string(forKey: Keys.userName) ?? ""
+        self.lastWelcomeTemplate = defaults.string(forKey: Keys.lastWelcomeTemplate) ?? ""
     }
 }

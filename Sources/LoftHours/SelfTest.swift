@@ -167,6 +167,56 @@ enum SelfTest {
         print("CALENDAR: OK")
     }
 
+    /// Headless check of the home-screen welcome greeting: every template across
+    /// every pool renders with the name (no leftover placeholder) and stays to a
+    /// max of three words; the right pool is chosen per weekday; and the
+    /// no-immediate-repeat avoidance works. No randomness assertions.
+    static func runWelcomeTest() {
+        let allPools: [[String]] = [
+            Messages.welcomeMonday, Messages.welcomeWednesday, Messages.welcomeFriday,
+            Messages.welcomeWeekend, Messages.welcomeGeneral,
+        ]
+        for pool in allPools {
+            for template in pool {
+                let rendered = template.replacingOccurrences(of: "{name}", with: "Sam")
+                precondition(template.contains("{name}"), "WELCOME: template missing placeholder: \(template)")
+                precondition(!rendered.contains("{name}"), "WELCOME: placeholder survived: \(template)")
+                precondition(rendered.contains("Sam"), "WELCOME: name not rendered: \(template)")
+                let words = rendered.split(separator: " ").count
+                precondition(words <= 3, "WELCOME: over 3 words (\(words)): \(rendered)")
+            }
+        }
+
+        // Pool routing by a UTC calendar on known dates (Jun 2026: 1=Mon, 3=Wed,
+        // 5=Fri, 6=Sat).
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(identifier: "UTC")!
+        fmt.dateFormat = "yyyy-MM-dd"
+
+        func assertPool(_ dateStr: String, _ expected: [String], _ label: String) {
+            let date = fmt.date(from: dateStr)!
+            let result = Messages.welcome(name: "Sam", date: date, calendar: cal)
+            precondition(expected.contains(result.template), "WELCOME: \(label) routed to wrong pool: \(result.template)")
+        }
+        assertPool("2026-06-01", Messages.welcomeMonday, "Monday")
+        assertPool("2026-06-03", Messages.welcomeWednesday, "Wednesday")
+        assertPool("2026-06-05", Messages.welcomeFriday, "Friday")
+        assertPool("2026-06-06", Messages.welcomeWeekend, "Saturday")
+        assertPool("2026-06-02", Messages.welcomeGeneral, "Tuesday")
+
+        // No immediate repeat: avoiding a template never returns it.
+        let wed = fmt.date(from: "2026-06-03")!
+        for _ in 0..<20 {
+            let avoid = Messages.welcomeWednesday[0]
+            let r = Messages.welcome(name: "Sam", date: wed, calendar: cal, avoiding: avoid)
+            precondition(r.template != avoid, "WELCOME: avoidance failed, returned \(r.template)")
+        }
+        print("WELCOME: OK")
+    }
+
     /// Headless check of the crash-safe orphan sweep: drop an active-session.json
     /// in a temp log dir, sweep it, and verify it moved into abandoned/.
     static func runOrphanSweepTest() {
