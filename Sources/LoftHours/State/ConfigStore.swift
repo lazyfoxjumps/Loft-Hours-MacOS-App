@@ -46,6 +46,12 @@ final class ConfigStore: ObservableObject {
     @Published var userName: String {
         didSet { defaults.set(userName, forKey: Keys.userName) }
     }
+    /// Whether the first-run welcome flow has been completed. RootView gates on
+    /// this rather than on `userName`, since the Google path signs in before a
+    /// name exists. Existing installs with a saved name are migrated to true.
+    @Published var hasOnboarded: Bool {
+        didSet { defaults.set(hasOnboarded, forKey: Keys.hasOnboarded) }
+    }
     /// The last welcome template shown, so the next pick avoids an immediate
     /// repeat across app opens. Stored as the raw "{name}" template, not rendered.
     @Published var lastWelcomeTemplate: String {
@@ -66,6 +72,7 @@ final class ConfigStore: ObservableObject {
         static let calendarId = "lofthours.calendar.id"
         static let calendarConnectedEmail = "lofthours.calendar.email"
         static let userName = "lofthours.user.name"
+        static let hasOnboarded = "lofthours.user.onboarded"
         static let lastWelcomeTemplate = "lofthours.welcome.last"
     }
 
@@ -85,7 +92,15 @@ final class ConfigStore: ObservableObject {
         self.calendarSyncEnabled = defaults.bool(forKey: Keys.calendarSyncEnabled)
         self.calendarId = defaults.string(forKey: Keys.calendarId) ?? "primary"
         self.calendarConnectedEmail = defaults.string(forKey: Keys.calendarConnectedEmail)
-        self.userName = defaults.string(forKey: Keys.userName) ?? ""
+        let savedName = defaults.string(forKey: Keys.userName) ?? ""
+        self.userName = savedName
         self.lastWelcomeTemplate = defaults.string(forKey: Keys.lastWelcomeTemplate) ?? ""
+        // Migration: installs that captured a name before this flag existed have
+        // already been through onboarding.
+        if defaults.object(forKey: Keys.hasOnboarded) == nil {
+            self.hasOnboarded = !savedName.isEmpty
+        } else {
+            self.hasOnboarded = defaults.bool(forKey: Keys.hasOnboarded)
+        }
     }
 }

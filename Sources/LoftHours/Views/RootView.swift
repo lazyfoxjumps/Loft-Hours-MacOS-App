@@ -7,23 +7,19 @@ struct RootView: View {
     @EnvironmentObject private var controller: SessionController
     @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var config: ConfigStore
+    @EnvironmentObject private var googleAuth: GoogleAuth
 
     private var isDone: Bool {
         if case .done = controller.phase { return true }
         return false
     }
 
-    /// First run: no name captured yet. Gate everything behind onboarding so the
-    /// home-screen greeting always has a name to use.
-    private var needsOnboarding: Bool {
-        config.userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
     var body: some View {
-        if needsOnboarding {
+        if !config.hasOnboarded {
             OnboardingView()
                 .environmentObject(theme)
                 .environmentObject(config)
+                .environmentObject(googleAuth)
         } else {
             mainContent
         }
