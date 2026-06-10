@@ -5,6 +5,7 @@ struct LoftHoursApp: App {
     @StateObject private var theme = ThemeStore()
     @StateObject private var controller: SessionController
     @StateObject private var googleAuth: GoogleAuth
+    @StateObject private var reminderService = ReminderService()
 
     init() {
         let cfg = ConfigStore()
@@ -12,6 +13,9 @@ struct LoftHoursApp: App {
         _config = StateObject(wrappedValue: cfg)
         _googleAuth = StateObject(wrappedValue: auth)
         _controller = StateObject(wrappedValue: SessionController(config: cfg, auth: auth))
+        // Claim the notification-center delegate so reminder taps route back
+        // into the app and reminders still banner while we're frontmost.
+        NotificationRouter.shared.install()
     }
 
     var body: some Scene {
@@ -21,6 +25,7 @@ struct LoftHoursApp: App {
                 .environmentObject(theme)
                 .environmentObject(config)
                 .environmentObject(googleAuth)
+                .environmentObject(reminderService)
         }
         .windowResizability(.contentMinSize)
 

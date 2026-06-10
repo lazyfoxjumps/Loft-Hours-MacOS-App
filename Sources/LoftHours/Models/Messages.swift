@@ -52,6 +52,18 @@ enum Messages {
         "Sip some water and wiggle your fingers loose.",
     ]
 
+    /// Bodies for the recurring "time to focus" reminder notifications. A fresh
+    /// line is picked each time a nudge is scheduled (and re-rolled at every
+    /// launch), so the same reminder doesn't sound like a broken record.
+    static let focusNudges = [
+        "It's focus time. The loft is open whenever you are.",
+        "Your focus block is calling. Come settle in.",
+        "Time to get a block in. I'll hold the timer.",
+        "This is your nudge: pick one thing and let's go.",
+        "The desk is ready. Come do a block with me.",
+        "Hey, it's that time. Let's make some quiet progress.",
+    ]
+
     // MARK: - Home-screen welcome greeting
 
     /// Cycling greeting that replaces the "Loft Hours" wordmark on the home

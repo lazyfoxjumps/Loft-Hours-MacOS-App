@@ -8,6 +8,7 @@ struct RootView: View {
     @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var config: ConfigStore
     @EnvironmentObject private var googleAuth: GoogleAuth
+    @EnvironmentObject private var reminderService: ReminderService
 
     private var isDone: Bool {
         if case .done = controller.phase { return true }
@@ -53,7 +54,13 @@ struct RootView: View {
             footerMark(p)
         }
         .frame(minWidth: 460, minHeight: 560)
-        .task { controller.requestNotificationAuthorization() }
+        .task {
+            controller.requestNotificationAuthorization()
+            // Re-mirror the saved reminders into the notification center each
+            // launch: idempotent (stable identifiers) and it re-rolls the
+            // focus-nudge copy so repeats don't go stale.
+            reminderService.rescheduleAll()
+        }
         .animation(.easeInOut(duration: 0.4), value: theme.selected)
         .sheet(isPresented: $controller.showSettings) {
             SettingsPanel()

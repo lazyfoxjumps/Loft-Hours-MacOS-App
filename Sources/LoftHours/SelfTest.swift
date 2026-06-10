@@ -261,6 +261,82 @@ enum SelfTest {
         print("WELCOME: OK")
     }
 
+    /// Headless check of the reminders model: trigger components per recurrence,
+    /// the monthly 29-31 day clamp, next-fire and today's-occurrence math, the
+    /// Codable persistence round trip, and the focus-nudge copy pool. Pure logic
+    /// only: no UNUserNotificationCenter (which needs a launched app bundle).
+    static func runReminderTest() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(identifier: "UTC")!
+        fmt.dateFormat = "yyyy-MM-dd HH:mm"
+
+        // Anchor: Friday 2026-07-31 at 15:30 (day 31 exercises the monthly clamp).
+        let anchor = fmt.date(from: "2026-07-31 15:30")!
+
+        // Once: full date components, no repeat.
+        var r = Reminder(kind: .task, title: "pick up the document", anchor: anchor, recurrence: .once)
+        var c = r.triggerComponents(calendar: cal)
+        precondition(!r.repeats, "REMINDER: once should not repeat")
+        precondition(c.year == 2026 && c.month == 7 && c.day == 31, "REMINDER: once should pin the full date")
+        precondition(c.hour == 15 && c.minute == 30, "REMINDER: once time mismatch")
+
+        // Daily: time only.
+        r.recurrence = .daily
+        c = r.triggerComponents(calendar: cal)
+        precondition(r.repeats, "REMINDER: daily should repeat")
+        precondition(c.year == nil && c.day == nil && c.weekday == nil, "REMINDER: daily should only pin the time")
+        precondition(c.hour == 15 && c.minute == 30, "REMINDER: daily time mismatch")
+
+        // Weekly: weekday + time (2026-07-31 is a Friday, weekday 6).
+        r.recurrence = .weekly
+        c = r.triggerComponents(calendar: cal)
+        precondition(c.weekday == 6 && c.day == nil, "REMINDER: weekly should pin the weekday, not the day")
+
+        // Monthly: day 31 clamps to 28 and gets flagged; day 15 passes through.
+        r.recurrence = .monthly
+        c = r.triggerComponents(calendar: cal)
+        precondition(c.day == Reminder.monthlyDayCap, "REMINDER: day 31 should clamp to \(Reminder.monthlyDayCap)")
+        precondition(r.monthlyDayClamped(calendar: cal), "REMINDER: day 31 should be flagged as clamped")
+        let midMonth = Reminder(anchor: fmt.date(from: "2026-07-15 09:00")!, recurrence: .monthly)
+        precondition(midMonth.triggerComponents(calendar: cal).day == 15, "REMINDER: day 15 should not clamp")
+        precondition(!midMonth.monthlyDayClamped(calendar: cal), "REMINDER: day 15 should not be flagged")
+
+        // Next fire: a past one-off has nothing left; daily fires at the next 15:30.
+        let now = fmt.date(from: "2026-08-10 12:00")!
+        let pastOnce = Reminder(anchor: anchor, recurrence: .once)
+        precondition(pastOnce.nextFireDate(after: now, calendar: cal) == nil, "REMINDER: past once should have no next fire")
+        let futureOnce = Reminder(anchor: fmt.date(from: "2026-08-11 09:00")!, recurrence: .once)
+        precondition(futureOnce.nextFireDate(after: now, calendar: cal) == futureOnce.anchor, "REMINDER: future once should fire at its anchor")
+        let daily = Reminder(anchor: anchor, recurrence: .daily)
+        precondition(daily.nextFireDate(after: now, calendar: cal) == fmt.date(from: "2026-08-10 15:30"), "REMINDER: daily should fire today at 15:30")
+
+        // Today's occurrence: daily lands today at its time; a once on another
+        // day stays off the rail; weekly only shows on its weekday.
+        precondition(daily.occurrenceToday(now: now, calendar: cal) == fmt.date(from: "2026-08-10 15:30"), "REMINDER: daily occurrence mismatch")
+        precondition(pastOnce.occurrenceToday(now: now, calendar: cal) == nil, "REMINDER: other-day once should not occur today")
+        let weekly = Reminder(anchor: anchor, recurrence: .weekly)
+        precondition(weekly.occurrenceToday(now: now, calendar: cal) == nil, "REMINDER: Friday weekly should not occur on a Monday")
+        let friday = fmt.date(from: "2026-08-14 12:00")!
+        precondition(weekly.occurrenceToday(now: friday, calendar: cal) == fmt.date(from: "2026-08-14 15:30"), "REMINDER: weekly should occur on its weekday")
+
+        // Persistence round trip through the same helpers the service uses.
+        let saved = [pastOnce, daily, Reminder(kind: .focusNudge, anchor: anchor, recurrence: .weekly, enabled: false)]
+        let restored = ReminderService.decode(ReminderService.encode(saved))
+        precondition(restored == saved, "REMINDER: codable round trip mismatch")
+        precondition(ReminderService.decode(nil).isEmpty, "REMINDER: nil data should decode to empty")
+
+        // Focus-nudge copy pool: non-empty, and clean of em/en dashes per the
+        // voice guideline.
+        precondition(!Messages.focusNudges.isEmpty, "REMINDER: focus nudge pool is empty")
+        for line in Messages.focusNudges {
+            precondition(!line.contains("\u{2014}") && !line.contains("\u{2013}"), "REMINDER: dash in nudge copy: \(line)")
+        }
+        print("REMINDER: OK")
+    }
+
     /// Headless check of the crash-safe orphan sweep: drop an active-session.json
     /// in a temp log dir, sweep it, and verify it moved into abandoned/.
     static func runOrphanSweepTest() {

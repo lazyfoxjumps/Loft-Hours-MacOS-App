@@ -107,6 +107,8 @@ struct IntakeView: View {
 
                 dndToggle(p)
 
+                YourDayTimeline()
+
                 field("Hey, what are you working on today?") {
                     VStack(alignment: .leading, spacing: 6) {
                         if resumed {

@@ -14,6 +14,7 @@ enum EntryPoint {
             SelfTest.runOrphanSweepTest()
             SelfTest.runCalendarTest()
             SelfTest.runWelcomeTest()
+            SelfTest.runReminderTest()
             return
         }
         LoftHoursApp.main()
