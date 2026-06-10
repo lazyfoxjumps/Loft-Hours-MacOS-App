@@ -66,24 +66,24 @@ struct ThemePreset: Identifiable, Equatable {
 }
 
 extension ThemePreset {
-    /// Classic midnight (the original config default) plus the five academia
-    /// presets from the timer template, in the same order.
+    /// The seven curated palettes (2026-06 redesign): four dark-mode and three
+    /// light-mode themes. Each maps a moodboard palette onto the five roles;
+    /// `Palette.init` derives light vs dark chrome from the background.
     static let all: [ThemePreset] = [
-        ThemePreset(id: "midnight", name: "Classic Midnight",
-                    accent: "a78bfa", background: "0f172a", warn: "f59e0b", breakHex: "22c55e", done: "22c55e"),
         ThemePreset(id: "dark-academia", name: "Dark Academia",
-                    accent: "8b2e3b", background: "1c1410", warn: "c9933b", breakHex: "6b7e5c", done: "a8895d"),
+                    accent: "A38860", background: "031100", warn: "390517", breakHex: "18302B", done: "EDEDED"),
         ThemePreset(id: "light-academia", name: "Light Academia",
-                    accent: "5c3a1e", background: "efe4ce", warn: "b07d2f", breakHex: "8e9b81", done: "a47358"),
-        ThemePreset(id: "forest-cottagecore", name: "Forest Cottagecore",
-                    accent: "6b8e5a", background: "1a201a", warn: "c98a3f", breakHex: "a8b89f", done: "a86b4f"),
+                    accent: "8A4B32", background: "EADFC6", warn: "8B7A4D", breakHex: "3E4A2E", done: "4A3526"),
         ThemePreset(id: "candlelit-nocturne", name: "Candlelit Nocturne",
-                    accent: "d4a755", background: "0c1424", warn: "cc6633", breakHex: "6a89a8", done: "b8a888"),
-        // Reworked to read as a softer milk-coffee palette: a lighter, foamier
-        // linen background and a mid-tone mocha accent, so it no longer reads as
-        // a near-twin of Light Academia (yellow-cream bg + dark espresso accent).
+                    accent: "C9A86A", background: "0C1424", warn: "3E5C8A", breakHex: "C7BCA8", done: "E8E2D4"),
+        ThemePreset(id: "monochrome-magic", name: "Monochrome Magic",
+                    accent: "B8AA9A", background: "1C1C1B", warn: "6A5D50", breakHex: "979086", done: "C8C0B0"),
+        ThemePreset(id: "modern-minimalist", name: "Modern Minimalist",
+                    accent: "5B4738", background: "ECE6D6", warn: "B59C7D", breakHex: "9A9398", done: "C2C1A8"),
+        ThemePreset(id: "forest-cottagecore", name: "Forest Cottagecore",
+                    accent: "6E8C50", background: "2C2010", warn: "C9B594", breakHex: "354B26", done: "E6DAC6"),
         ThemePreset(id: "linen-latte", name: "Linen & Latte",
-                    accent: "9c6644", background: "f4ecde", warn: "cf9a4e", breakHex: "a3a890", done: "bb7a5a"),
+                    accent: "87674C", background: "F2E2CF", warn: "B58F62", breakHex: "C6A98A", done: "3E322A"),
     ]
 
     /// New users land on Light Academia; existing users keep whatever they saved.
