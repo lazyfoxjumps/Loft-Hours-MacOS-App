@@ -1,5 +1,11 @@
 import Foundation
 
+/// One checkbox line from a log's `## Done` section.
+struct DoneItem: Equatable {
+    let checked: Bool
+    let text: String
+}
+
 /// One parsed session log, read back from the markdown `SessionStore` writes.
 struct ParsedLog {
     var url: URL
@@ -13,6 +19,8 @@ struct ParsedLog {
     var energyEnd: Energy
     var nextStep: String
     var reflection: String
+    var doneItems: [DoneItem] = []
+    var notes: String = ""
 }
 
 /// Reads and parses the session logs written by `SessionStore`, and manages the
@@ -55,8 +63,10 @@ struct LogReader {
         var fm: [String: String] = [:]
         var inFront = false
         var frontDone = false
-        var inReflection = false
+        var section = ""
         var reflectionLines: [String] = []
+        var noteLines: [String] = []
+        var doneItems: [DoneItem] = []
 
         for line in lines {
             if line == "---" {
@@ -73,9 +83,25 @@ struct LogReader {
                 continue
             }
             if frontDone {
-                if line.hasPrefix("## Reflection") { inReflection = true; continue }
-                if line.hasPrefix("## ") { inReflection = false; continue }
-                if inReflection { reflectionLines.append(line) }
+                if line.hasPrefix("## ") {
+                    section = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
+                    continue
+                }
+                switch section {
+                case "Reflection":
+                    reflectionLines.append(line)
+                case "Notes":
+                    noteLines.append(line)
+                case "Done":
+                    // Checklist rows look like "- [x] task" / "- [ ] task".
+                    if line.hasPrefix("- [") {
+                        let checked = line.hasPrefix("- [x]")
+                        let text = String(line.dropFirst(5)).trimmingCharacters(in: .whitespaces)
+                        if !text.isEmpty { doneItems.append(DoneItem(checked: checked, text: text)) }
+                    }
+                default:
+                    break
+                }
             }
         }
 
@@ -98,7 +124,9 @@ struct LogReader {
             energyStart: Energy(rawValue: fm["energy_start"] ?? "") ?? .medium,
             energyEnd: Energy(rawValue: fm["energy_end"] ?? "") ?? .medium,
             nextStep: fm["next_step"] ?? "",
-            reflection: reflectionLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            reflection: reflectionLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines),
+            doneItems: doneItems,
+            notes: noteLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }
 

@@ -61,8 +61,9 @@ struct ReminderEditor: View {
             )
 
             if kind == .task {
-                TextField("Pick up the document...", text: $title)
+                TextField("Remind me to...", text: $title)
                     .textFieldStyle(.roundedBorder)
+                    .font(AppFont.body)
             } else {
                 Text("A gentle ping to come do a focus block. The wording cycles so it stays fresh.")
                     .font(AppFont.caption)
@@ -81,8 +82,10 @@ struct ReminderEditor: View {
                 selection: $anchor,
                 displayedComponents: recurrence == .daily ? [.hourAndMinute] : [.date, .hourAndMinute]
             )
+            .datePickerStyle(.stepperField)
             .font(AppFont.callout)
             .foregroundStyle(p.foreground)
+            .frame(maxWidth: .infinity)
 
             if let note = scheduleNote {
                 Text(note)
@@ -93,18 +96,32 @@ struct ReminderEditor: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", action: onCancel)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                // Outlined in the palette's foreground so it reads on every
+                // theme: light-on-dark palettes get a light button, dark-on-light
+                // get a dark one. The system .bordered style ignored the theme
+                // and went dark-on-dark.
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(AppFont.callout)
+                        .foregroundStyle(p.foreground)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(p.foreground.opacity(0.55), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
                 Button("Save") { onSave(draft) }
                     .buttonStyle(.borderedProminent)
                     .tint(p.accent)
                     .controlSize(.small)
+                    .font(AppFont.callout)
                     .disabled(!canSave)
             }
         }
         .padding(16)
-        .frame(width: 300)
+        .frame(width: 340)
         .background(p.background)
     }
 

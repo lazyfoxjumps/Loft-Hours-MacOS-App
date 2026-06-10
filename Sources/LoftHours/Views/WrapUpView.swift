@@ -44,6 +44,7 @@ struct WrapUpView: View {
                         .foregroundStyle(p.foreground)
                     if let goal = controller.session?.goal {
                         Text("You sat down to: \(goal)")
+                            .font(AppFont.body)
                             .foregroundStyle(p.muted)
                     }
                 }
@@ -63,6 +64,7 @@ struct WrapUpView: View {
                 field("What's next on your mind?") {
                     TextField("I'm planning to...", text: $nextStep, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
+                        .font(AppFont.body)
                         .lineLimit(1...3)
                 }
 
@@ -77,6 +79,7 @@ struct WrapUpView: View {
                 field("Anything you want to jot down before you log off? (optional)") {
                     TextField("A line of reflection, or leave it blank", text: $reflection, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
+                        .font(AppFont.body)
                         .lineLimit(1...4)
                 }
 
@@ -97,6 +100,7 @@ struct WrapUpView: View {
                         )
                     } label: {
                         Text("Save and finish")
+                            .font(AppFont.nunito(14, .semibold))
                             .frame(maxWidth: .infinity)
                     }
                     .controlSize(.large)
@@ -107,6 +111,7 @@ struct WrapUpView: View {
                         controller.discardAndRestart()
                     } label: {
                         Text("Start another session")
+                            .font(AppFont.nunito(14, .semibold))
                             .frame(maxWidth: .infinity)
                     }
                     .controlSize(.large)
@@ -161,6 +166,7 @@ struct WrapUpView: View {
                 .foregroundStyle(p.accent)
             TextField("Something else you got done", text: task.text, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
+                .font(AppFont.body)
                 .lineLimit(1...3)
                 .focused($focusedOther, equals: task.wrappedValue.id)
             Button {

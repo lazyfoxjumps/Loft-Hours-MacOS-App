@@ -29,7 +29,7 @@ struct TimerView: View {
                 Spacer()
 
                 Text(controller.session?.goal ?? "")
-                    .font(.system(size: goalFont, weight: .medium))
+                    .font(AppFont.nunito(goalFont, .medium))
                     .tracking(2.5)
                     .textCase(.uppercase)
                     .foregroundStyle(p.muted)
@@ -50,16 +50,19 @@ struct TimerView: View {
                         .animation(.easeInOut(duration: 0.4), value: controller.isWarn)
 
                     VStack(spacing: 6) {
+                        // Nunito's digits are natively tabular (verified: "00:00"
+                        // and "11:11" measure identical widths), so the clock
+                        // doesn't jitter as digits tick over.
                         Text(controller.isStopwatch
                              ? elapsedString(controller.elapsed)
                              : timeString(controller.remaining))
-                            .font(.system(size: timeFont, weight: .thin, design: .default))
+                            .font(AppFont.nunito(timeFont, .thin))
                             .monospacedDigit()
                             .foregroundStyle(active)
                             .animation(.easeInOut(duration: 0.4), value: controller.isWarn)
                         if controller.isPaused {
                             Text("Paused")
-                                .font(.caption)
+                                .font(AppFont.caption)
                                 .foregroundStyle(p.muted)
                         }
                     }

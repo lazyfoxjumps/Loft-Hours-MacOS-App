@@ -72,6 +72,12 @@ struct RootView: View {
                 .environmentObject(controller)
                 .environmentObject(theme)
         }
+        .sheet(isPresented: $controller.showReminders) {
+            RemindersSheet()
+                .environmentObject(controller)
+                .environmentObject(theme)
+                .environmentObject(reminderService)
+        }
     }
 
     /// The small "Loft Hours" wordmark pinned to the bottom-center of every
@@ -117,5 +123,7 @@ struct RootView: View {
             Spacer()
         }
         .padding(14)
+        // A touch more clearance so the gear doesn't crowd the window edge.
+        .padding(.trailing, 5)
     }
 }

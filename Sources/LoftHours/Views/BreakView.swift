@@ -41,6 +41,7 @@ struct BreakView: View {
                         .foregroundStyle(p.foreground)
                     TextField("Jot a line, or leave it blank", text: $checkIn, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
+                        .font(AppFont.body)
                         .lineLimit(1...3)
                 }
                 .padding(.horizontal, 4)
@@ -49,7 +50,9 @@ struct BreakView: View {
                     Button {
                         controller.finishToWrapUp(checkIn: checkIn)
                     } label: {
-                        Text("Wrap it up").frame(maxWidth: .infinity)
+                        Text("Wrap it up")
+                            .font(AppFont.nunito(14, .semibold))
+                            .frame(maxWidth: .infinity)
                     }
                     .controlSize(.large)
                     .buttonStyle(.bordered)
@@ -59,7 +62,9 @@ struct BreakView: View {
                         controller.startAnotherBlock(checkIn: checkIn)
                         checkIn = ""
                     } label: {
-                        Text("One more block").frame(maxWidth: .infinity)
+                        Text("One more block")
+                            .font(AppFont.nunito(14, .semibold))
+                            .frame(maxWidth: .infinity)
                     }
                     .controlSize(.large)
                     .buttonStyle(.borderedProminent)
@@ -95,7 +100,7 @@ struct BreakView: View {
 
             VStack(spacing: 2) {
                 Text(timeString(controller.breakRemaining))
-                    .font(.system(size: timeFont, weight: .thin, design: .default))
+                    .font(AppFont.nunito(timeFont, .thin))
                     .monospacedDigit()
                     .foregroundStyle(controller.isBreakOver ? p.muted : p.breakColor)
                 Text("break")

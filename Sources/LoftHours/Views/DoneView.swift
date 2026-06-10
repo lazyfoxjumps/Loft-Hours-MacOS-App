@@ -33,6 +33,7 @@ struct DoneView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(p.accent)
+                .font(AppFont.callout)
             }
 
             Button("Go again") {
@@ -41,6 +42,7 @@ struct DoneView: View {
             .controlSize(.large)
             .buttonStyle(.borderedProminent)
             .tint(p.accent)
+            .font(AppFont.nunito(14, .semibold))
         }
         .padding(36)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

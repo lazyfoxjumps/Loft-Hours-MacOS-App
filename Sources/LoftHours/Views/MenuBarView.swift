@@ -12,8 +12,11 @@ struct MenuBarView: View {
             Text("Nothing going right now")
         case .running:
             Text(controller.isPaused ? "Paused" : "Focusing")
+            // Note: the menu-bar dropdown is a native AppKit menu, which renders
+            // items in the system menu font regardless of SwiftUI font modifiers.
+            // That's system chrome, same category as SF Symbols: left alone.
             if let goal = controller.session?.goal {
-                Text(goal).font(.caption)
+                Text(goal).font(AppFont.caption)
             }
             Divider()
             if !controller.isStopwatch {

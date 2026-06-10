@@ -34,6 +34,7 @@ struct AppNameField: View {
             HStack(spacing: 6) {
                 TextField("App name", text: $text)
                     .textFieldStyle(.roundedBorder)
+                    .font(AppFont.body)
                     .focused($focused)
                     .disabled(!enabled)
                 Button(action: onRemove) {

@@ -51,6 +51,11 @@ final class SessionController: ObservableObject {
     @Published var showReview: Bool = false
     /// Which window the Review sheet is currently showing.
     @Published var reviewScope: ReviewScope = .week
+    /// Whether the "All reminders" management sheet is shown.
+    @Published var showReminders: Bool = false
+    /// Deep-link for the reminders sheet: when set, it opens straight into this
+    /// reminder's edit form (set by tapping a row on the home rail).
+    @Published var reminderToEdit: Reminder? = nil
 
     /// Apps closed during setup so the wrap-up can offer to reopen them.
     @Published private(set) var closedApps: [String] = []
@@ -119,6 +124,14 @@ final class SessionController: ObservableObject {
     /// Compute the rollup for the currently selected scope, live from the logs.
     func rollup() -> Rollup {
         RollupService(reader: reader).rollup(reviewScope, now: Date())
+    }
+
+    /// Every session log parsed, newest first, for the Logs pane of the Review
+    /// sheet.
+    func allLogs() -> [ParsedLog] {
+        reader.allLogFiles()
+            .compactMap(reader.parse)
+            .sorted { $0.startedAt > $1.startedAt }
     }
 
     /// Persist the rollup's markdown report; returns the file URL (or nil on

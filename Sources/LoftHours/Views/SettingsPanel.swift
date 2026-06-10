@@ -25,12 +25,6 @@ struct SettingsPanel: View {
     /// Committed back only when non-empty so the home greeting never loses a name
     /// (and the onboarding gate never re-triggers from an empty field).
     @State private var editName: String = ""
-    /// Reminders backing the "Your day" rail and the scheduled notifications.
-    @EnvironmentObject private var reminderService: ReminderService
-    /// Whether the add/edit reminder form is showing, and which reminder it
-    /// edits (nil = creating a new one).
-    @State private var showReminderEditor = false
-    @State private var editingReminder: Reminder? = nil
 
     /// Whether both configured Focus shortcuts exist. Nil when we can't tell.
     private var focusShortcutsReady: Bool? {
@@ -46,7 +40,6 @@ struct SettingsPanel: View {
     enum Tab: String, CaseIterable, Identifiable {
         case theme = "Theme"
         case environment = "Environment"
-        case reminders = "Reminders"
         var id: String { rawValue }
     }
 
@@ -77,7 +70,6 @@ struct SettingsPanel: View {
                 switch tab {
                 case .theme: themeContent(p)
                 case .environment: environmentContent(p)
-                case .reminders: remindersContent(p)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -178,12 +170,14 @@ struct SettingsPanel: View {
             HStack(spacing: 8) {
                 TextField("Your name", text: $editName)
                     .textFieldStyle(.roundedBorder)
+                    .font(AppFont.body)
                     .frame(maxWidth: 200)
                     .onSubmit(commitName)
                 Button("Save", action: commitName)
                     .buttonStyle(.bordered)
                     .tint(p.accent)
                     .controlSize(.small)
+                    .font(AppFont.callout)
                     .disabled(!nameChanged)
             }
         }
@@ -217,11 +211,13 @@ struct SettingsPanel: View {
                     labeled("Shortcut to enable", p: p) {
                         TextField("Loft Hours Focus On", text: $config.focusShortcutOn)
                             .textFieldStyle(.roundedBorder)
+                            .font(AppFont.body)
                             .disabled(!config.focusModeEnabled)
                     }
                     labeled("Shortcut to disable", p: p) {
                         TextField("Loft Hours Focus Off", text: $config.focusShortcutOff)
                             .textFieldStyle(.roundedBorder)
+                            .font(AppFont.body)
                             .disabled(!config.focusModeEnabled)
                     }
                 }
@@ -257,6 +253,7 @@ struct SettingsPanel: View {
             .buttonStyle(.bordered)
             .tint(p.accent)
             .controlSize(.small)
+            .font(AppFont.callout)
             .disabled(!config.focusModeEnabled)
         }
         .padding(10)
@@ -295,112 +292,6 @@ struct SettingsPanel: View {
         }
     }
 
-    // MARK: - Reminders tab
-
-    private func remindersContent(_ p: Palette) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Task reminders and recurring time-to-focus nudges. macOS delivers them at the right moment, even when the loft is in the background.")
-                    .font(AppFont.caption)
-                    .foregroundStyle(p.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                ForEach(reminderService.reminders) { reminder in
-                    reminderRow(reminder, p)
-                }
-
-                if showReminderEditor {
-                    ReminderEditor(
-                        existing: editingReminder,
-                        onSave: { reminder in
-                            if editingReminder == nil {
-                                reminderService.add(reminder)
-                            } else {
-                                reminderService.update(reminder)
-                            }
-                            showReminderEditor = false
-                            editingReminder = nil
-                        },
-                        onCancel: {
-                            showReminderEditor = false
-                            editingReminder = nil
-                        }
-                    )
-                    .id(editingReminder?.id)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(p.surface)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.surfaceBorder, lineWidth: 1))
-                    )
-                } else {
-                    Button {
-                        editingReminder = nil
-                        showReminderEditor = true
-                    } label: {
-                        Label("Add reminder", systemImage: "plus")
-                            .font(AppFont.caption)
-                            .foregroundStyle(p.accent)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private func reminderRow(_ reminder: Reminder, _ p: Palette) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: reminder.kind == .focusNudge ? "timer" : "bell")
-                .foregroundStyle(reminder.enabled ? p.accent : p.muted)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(reminder.displayTitle)
-                    .font(AppFont.callout)
-                    .foregroundStyle(p.foreground)
-                    .lineLimit(1)
-                Text(reminder.scheduleDescription())
-                    .font(AppFont.caption)
-                    .foregroundStyle(p.muted)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: Binding(
-                get: { reminder.enabled },
-                set: { reminderService.setEnabled($0, id: reminder.id) }
-            ))
-            .toggleStyle(.switch)
-            .controlSize(.mini)
-            .tint(p.accent)
-            .labelsHidden()
-
-            Button {
-                editingReminder = reminder
-                showReminderEditor = true
-            } label: {
-                Image(systemName: "pencil")
-                    .foregroundStyle(p.muted)
-            }
-            .buttonStyle(.plain)
-            .help("Edit this reminder")
-
-            Button {
-                reminderService.remove(reminder.id)
-            } label: {
-                Image(systemName: "trash")
-                    .foregroundStyle(p.muted)
-            }
-            .buttonStyle(.plain)
-            .help("Delete this reminder")
-        }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(p.surface)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.surfaceBorder, lineWidth: 1))
-        )
-        .opacity(reminder.enabled ? 1 : 0.6)
-    }
-
     // MARK: - Google Calendar section (test harness + real connect UI)
 
     private func calendarSection(_ p: Palette) -> some View {
@@ -433,6 +324,7 @@ struct SettingsPanel: View {
                 .buttonStyle(.bordered)
                 .tint(p.accent)
                 .controlSize(.small)
+                .font(AppFont.callout)
                 .disabled(calendarBusy)
             }
             .padding(10)

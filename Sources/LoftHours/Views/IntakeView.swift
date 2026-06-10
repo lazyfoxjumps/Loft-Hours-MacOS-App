@@ -86,6 +86,7 @@ struct IntakeView: View {
                             .font(AppFont.wordmark)
                             .foregroundStyle(p.foreground)
                         Text("Welcome to the loft. Let's get you set up.")
+                            .font(AppFont.body)
                             .foregroundStyle(p.muted)
                     }
                     Spacer()
@@ -127,6 +128,7 @@ struct IntakeView: View {
                                     axis: .vertical
                                 )
                                 .textFieldStyle(.roundedBorder)
+                                .font(AppFont.body)
                                 .lineLimit(1...3)
                                 .focusedIf(idx == 0, $goalFocused)
                                 .onChange(of: goalFocused) { if goalFocused { resumed = false } }
@@ -168,8 +170,10 @@ struct IntakeView: View {
                                 HStack(spacing: 6) {
                                     TextField("30", text: $customMinutes)
                                         .textFieldStyle(.roundedBorder)
+                                        .font(AppFont.body)
                                         .frame(width: 64)
                                     Text("minutes")
+                                        .font(AppFont.body)
                                         .foregroundStyle(p.muted)
                                 }
                             }
@@ -195,6 +199,7 @@ struct IntakeView: View {
                 field("What would make this feel done?") {
                     TextField("One thing that'll feel good to finish", text: $deliverable, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
+                        .font(AppFont.body)
                         .lineLimit(1...3)
                 }
 
@@ -208,6 +213,7 @@ struct IntakeView: View {
 
                 Button(action: start) {
                     Text("Let's get into it")
+                        .font(AppFont.nunito(14, .semibold))
                         .frame(maxWidth: .infinity)
                 }
                 .controlSize(.large)
