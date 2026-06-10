@@ -16,10 +16,12 @@ struct MenuBarView: View {
                 Text(goal).font(.caption)
             }
             Divider()
-            Button {
-                controller.rewind()
-            } label: {
-                Label("Rewind block", systemImage: "backward.end.fill")
+            if !controller.isStopwatch {
+                Button {
+                    controller.rewind()
+                } label: {
+                    Label("Rewind block", systemImage: "backward.end.fill")
+                }
             }
             Button {
                 controller.togglePause()
@@ -30,7 +32,9 @@ struct MenuBarView: View {
             Button {
                 controller.finishBlock()
             } label: {
-                Label("Complete block", systemImage: "forward.end.fill")
+                controller.isStopwatch
+                    ? Label("Stop the clock", systemImage: "stop.fill")
+                    : Label("Complete block", systemImage: "forward.end.fill")
             }
         case .breakTime:
             Text(controller.isBreakOver ? "Break's over" : "On a break")

@@ -9,6 +9,7 @@ enum EntryPoint {
         if CommandLine.arguments.contains("--selftest") {
             SelfTest.run()
             MainActor.assumeIsolated { SelfTest.runControllerFlow() }
+            MainActor.assumeIsolated { SelfTest.runStopwatchTest() }
             SelfTest.runRollupTest()
             SelfTest.runOrphanSweepTest()
             SelfTest.runCalendarTest()

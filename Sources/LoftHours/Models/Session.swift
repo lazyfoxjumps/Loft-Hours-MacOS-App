@@ -17,6 +17,9 @@ struct Session {
     var endedAt: Date?
     var durationMin: Int
     var blocks: Int = 1
+    /// Stopwatch mode: no planned length, the clock counts up and `durationMin`
+    /// is filled with the actual elapsed time as each block finishes.
+    var isStopwatch: Bool = false
 
     /// The intake plan as a single line (tasks joined with "; "). Kept for log
     /// frontmatter parity with the skill's `goal:` field.
@@ -41,12 +44,13 @@ struct Session {
     var notes: String = ""
     var reflection: String = ""
 
-    init(startedAt: Date, durationMin: Int, tasks: [String], deliverable: String, energyStart: Energy) {
+    init(startedAt: Date, durationMin: Int, tasks: [String], deliverable: String, energyStart: Energy, isStopwatch: Bool = false) {
         self.startedAt = startedAt
         self.durationMin = durationMin
         self.tasks = tasks
         self.goal = tasks.joined(separator: "; ")
         self.deliverable = deliverable
         self.energyStart = energyStart
+        self.isStopwatch = isStopwatch
     }
 }

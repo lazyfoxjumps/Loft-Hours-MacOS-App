@@ -22,6 +22,9 @@ final class SessionController: ObservableObject {
     @Published private(set) var remaining: TimeInterval = 0
     @Published private(set) var isPaused: Bool = false
 
+    // Stopwatch clock (count-up; only meaningful when the session is stopwatch)
+    @Published private(set) var elapsed: TimeInterval = 0
+
     // Break clock
     @Published private(set) var breakRemaining: TimeInterval = 0
     @Published private(set) var isBreakOver: Bool = false
@@ -65,6 +68,14 @@ final class SessionController: ObservableObject {
     private var blockTotal: TimeInterval = 0       // planned length of the current block (cue thresholds)
     private var lastBlockMinutes: Int = 25
     private var plannedFocusMinutes: Int = 0
+
+    // Stopwatch bookkeeping
+    /// Reference instant the count-up measures from; pushed forward on resume
+    /// so pauses don't count toward elapsed.
+    private var stopwatchStartRef: Date?
+    /// Real wall-clock start of the current stopwatch block, for the calendar
+    /// event created at finish (length is unknown up front).
+    private var blockStartDate: Date?
 
     // Break bookkeeping
     private var breakEndDate: Date?
@@ -137,6 +148,11 @@ final class SessionController: ObservableObject {
         phase == .running && remaining > 0 && remaining <= 60
     }
 
+    /// Whether the live session is a count-up stopwatch (vs a countdown block).
+    var isStopwatch: Bool {
+        session?.isStopwatch == true
+    }
+
     /// A rotating between-breaks reminder. Gentle body-care nudges in the app's
     /// study-with-me voice; cycles by block so each break feels a little
     /// different. See `Messages.breakReminders`.
@@ -148,8 +164,8 @@ final class SessionController: ObservableObject {
 
     // MARK: - Intake -> focus
 
-    func startSession(tasks: [String], durationMin: Int, deliverable: String, energy: Energy) {
-        var s = Session(startedAt: Date(), durationMin: durationMin, tasks: tasks, deliverable: deliverable, energyStart: energy)
+    func startSession(tasks: [String], durationMin: Int, deliverable: String, energy: Energy, isStopwatch: Bool = false) {
+        var s = Session(startedAt: Date(), durationMin: isStopwatch ? 0 : durationMin, tasks: tasks, deliverable: deliverable, energyStart: energy, isStopwatch: isStopwatch)
         s.blocks = 0
         session = s
         blocks = 0
@@ -195,6 +211,9 @@ final class SessionController: ObservableObject {
         isBreakOver = false
         endDate = nil
         breakEndDate = nil
+        elapsed = 0
+        stopwatchStartRef = nil
+        blockStartDate = nil
         phase = .intake
     }
 
@@ -228,6 +247,10 @@ final class SessionController: ObservableObject {
     }
 
     private func startFocusBlock(minutes: Int) {
+        if isStopwatch {
+            startStopwatchBlock()
+            return
+        }
         lastBlockMinutes = minutes
         blocks += 1
         plannedFocusMinutes += minutes
@@ -244,7 +267,29 @@ final class SessionController: ObservableObject {
         phase = .running
         startTicker()
         persistActive()
-        logBlockToCalendar(minutes: minutes)
+        logBlockToCalendar(start: Date(), minutes: minutes)
+    }
+
+    /// Stopwatch counterpart of `startFocusBlock`: the clock counts up from
+    /// zero with no end date, no halfway/last-minute cues, and no auto-finish.
+    /// The calendar event waits for `finishBlock`, when the real length is known.
+    private func startStopwatchBlock() {
+        blocks += 1
+        session?.blocks = blocks
+
+        elapsed = 0
+        stopwatchStartRef = Date()
+        blockStartDate = stopwatchStartRef
+        endDate = nil
+        remaining = 0
+        blockTotal = 0
+        effectiveTotal = 0
+        halfwayFired = false
+        lastMinuteFired = false
+        isPaused = false
+        phase = .running
+        startTicker()
+        persistActive()
     }
 
     /// Add a busy event to Google Calendar for this block, if the user opted in
@@ -252,10 +297,9 @@ final class SessionController: ObservableObject {
     /// Runs in a Task so the network call never delays the timer; the timer is
     /// driven by a RunLoop Timer and keeps firing while this awaits. Best-effort:
     /// failures are swallowed inside CalendarService.
-    private func logBlockToCalendar(minutes: Int) {
+    private func logBlockToCalendar(start: Date, minutes: Int) {
         guard let config, config.calendarSyncEnabled, let auth, let s = session else { return }
         let title = CalendarService.eventTitle(forGoal: s.goal)
-        let start = Date()
         let service = CalendarService(auth: auth, calendarId: config.calendarId)
         Task {
             _ = await service.createBlockEvent(title: title, start: start, durationMin: minutes)
@@ -290,7 +334,11 @@ final class SessionController: ObservableObject {
     func togglePause() {
         guard phase == .running else { return }
         if isPaused {
-            endDate = Date().addingTimeInterval(remaining)
+            if isStopwatch {
+                stopwatchStartRef = Date().addingTimeInterval(-elapsed)
+            } else {
+                endDate = Date().addingTimeInterval(remaining)
+            }
             isPaused = false
             startTicker()
         } else {
@@ -300,16 +348,26 @@ final class SessionController: ObservableObject {
     }
 
     func rewind() {
-        guard phase == .running else { return }
+        guard phase == .running, !isStopwatch else { return }
         remaining += rewindSeconds
         if remaining > effectiveTotal { effectiveTotal = remaining }
         if !isPaused { endDate = Date().addingTimeInterval(remaining) }
     }
 
-    /// End the focus block (natural completion or Skip) and start the break.
+    /// End the focus block (natural completion, Skip, or the stopwatch's Stop)
+    /// and start the break. A stopwatch block books its actual elapsed time into
+    /// the session here, and only now creates its calendar event (the length
+    /// wasn't known at start).
     func finishBlock() {
         guard phase == .running else { return }
         stopTicker()
+        if isStopwatch {
+            let minutes = max(1, Int((elapsed / 60).rounded()))
+            lastBlockMinutes = minutes
+            plannedFocusMinutes += minutes
+            session?.durationMin = plannedFocusMinutes
+            logBlockToCalendar(start: blockStartDate ?? Date().addingTimeInterval(-elapsed), minutes: minutes)
+        }
         remaining = 0
         chimer.play(.complete)
         notifier.notify(title: "Loft Hours", body: Messages.blockComplete.pick())
@@ -319,7 +377,9 @@ final class SessionController: ObservableObject {
     // MARK: - Break
 
     private func startBreak() {
-        breakTotal = lastBlockMinutes <= 25 ? 5 * 60 : 10 * 60
+        // Stopwatch blocks have no planned length to scale from, so they always
+        // get the short default break.
+        breakTotal = (isStopwatch || lastBlockMinutes <= 25) ? 5 * 60 : 10 * 60
         breakRemaining = breakTotal
         isBreakOver = false
         breakEndDate = Date().addingTimeInterval(breakRemaining)
@@ -390,6 +450,9 @@ final class SessionController: ObservableObject {
         isBreakOver = false
         endDate = nil
         breakEndDate = nil
+        elapsed = 0
+        stopwatchStartRef = nil
+        blockStartDate = nil
         phase = .intake
     }
 
@@ -410,6 +473,12 @@ final class SessionController: ObservableObject {
     }
 
     private func tick() {
+        // Stopwatch: count up, no cues, no auto-finish. Only Stop ends the block.
+        if isStopwatch {
+            guard let stopwatchStartRef, !isPaused else { return }
+            elapsed = max(0, Date().timeIntervalSince(stopwatchStartRef))
+            return
+        }
         guard let endDate, !isPaused else { return }
         remaining = max(0, endDate.timeIntervalSinceNow)
 

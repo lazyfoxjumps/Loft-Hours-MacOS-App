@@ -86,6 +86,50 @@ enum SelfTest {
         print("FLOW: OK")
     }
 
+    /// Headless drive of a stopwatch session: count-up block with no end date,
+    /// rewind a no-op, pause/resume works, Stop books the real elapsed time
+    /// (sub-minute rounds up to 1) and the break defaults to 5 minutes.
+    @MainActor
+    static func runStopwatchTest() {
+        let tmp = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("lofthours-stopwatch-\(UInt32.random(in: 0..<UInt32.max))", isDirectory: true)
+        let controller = SessionController(store: SessionStore(config: AppConfig(logDirectory: tmp)))
+
+        controller.startSession(tasks: ["stopwatch test"], durationMin: 0, deliverable: "d", energy: .medium, isStopwatch: true)
+        precondition(controller.phase == .running, "STOPWATCH: expected running after start")
+        precondition(controller.isStopwatch, "STOPWATCH: controller should report stopwatch mode")
+        precondition(controller.blocks == 1, "STOPWATCH: expected block 1")
+        precondition(controller.remaining == 0, "STOPWATCH: no countdown should be armed")
+        precondition(controller.session?.durationMin == 0, "STOPWATCH: duration should start at 0")
+
+        controller.togglePause()
+        precondition(controller.isPaused, "STOPWATCH: expected paused")
+        controller.togglePause()
+        precondition(!controller.isPaused, "STOPWATCH: expected resumed")
+
+        controller.rewind()
+        precondition(controller.remaining == 0, "STOPWATCH: rewind should be a no-op")
+
+        controller.finishBlock()
+        precondition(controller.phase == .breakTime, "STOPWATCH: expected breakTime after stop")
+        precondition(controller.breakRemaining == 5 * 60, "STOPWATCH: expected the default 5-min break")
+        precondition(controller.session?.durationMin == 1, "STOPWATCH: sub-minute block should book 1 min")
+
+        controller.finishToWrapUp(checkIn: "stopped the clock")
+        precondition(controller.phase == .wrapUp, "STOPWATCH: expected wrapUp")
+        controller.completeWrapUp(completedTasks: ["stopwatch test"], otherDelivered: "", nextStep: "", energyEnd: .medium, reflection: "")
+
+        guard case let .done(path) = controller.phase, !path.hasPrefix("ERROR") else {
+            print("STOPWATCH: FAILED to write log, phase=\(controller.phase)")
+            exit(1)
+        }
+        let contents = (try? String(contentsOfFile: path, encoding: .utf8)) ?? "<unreadable>"
+        precondition(contents.contains("duration_min: 1"), "STOPWATCH: expected duration_min: 1 in log")
+        precondition(contents.contains("blocks: 1"), "STOPWATCH: expected blocks: 1 in log")
+        precondition(contents.contains("stopped the clock"), "STOPWATCH: expected check-in note in log")
+        print("STOPWATCH: OK")
+    }
+
     /// Headless check of the rollup math + report writer: write three sessions on
     /// consecutive days into a temp log dir, then verify counts, streak, the
     /// written report, and the < 3-sessions insufficient guard.

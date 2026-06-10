@@ -16,6 +16,8 @@ struct IntakeView: View {
     @State private var energy: Energy = .medium
     @State private var durationChoice: DurationChoice = .m25
     @State private var customMinutes: String = "30"
+    /// Stopwatch mode: no planned length, the clock just counts up until stopped.
+    @State private var stopwatchMode: Bool = false
     @FocusState private var goalFocused: Bool
     /// True once the goal field was prefilled from the previous session's next step.
     @State private var resumed: Bool = false
@@ -57,16 +59,17 @@ struct IntakeView: View {
     }
 
     private var canStart: Bool {
-        !cleanTasks.isEmpty && resolvedMinutes != nil
+        !cleanTasks.isEmpty && (stopwatchMode || resolvedMinutes != nil)
     }
 
     private func start() {
-        guard canStart, let minutes = resolvedMinutes else { return }
+        guard canStart else { return }
         controller.startSession(
             tasks: cleanTasks,
-            durationMin: minutes,
+            durationMin: stopwatchMode ? 0 : (resolvedMinutes ?? 0),
             deliverable: deliverable.trimmingCharacters(in: .whitespacesAndNewlines),
-            energy: energy
+            energy: energy,
+            isStopwatch: stopwatchMode
         )
     }
 
@@ -152,21 +155,38 @@ struct IntakeView: View {
 
                 field("How long are we going for?") {
                     VStack(alignment: .leading, spacing: 8) {
-                        ThemedSegmented(
-                            options: [(.m25, "25 min"), (.m50, "50 min"), (.m90, "90 min"), (.custom, "Custom")],
-                            selection: $durationChoice,
-                            palette: p
-                        )
+                        Group {
+                            ThemedSegmented(
+                                options: [(.m25, "25 min"), (.m50, "50 min"), (.m90, "90 min"), (.custom, "Custom")],
+                                selection: $durationChoice,
+                                palette: p
+                            )
 
-                        if durationChoice == .custom {
-                            HStack(spacing: 6) {
-                                TextField("30", text: $customMinutes)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 64)
-                                Text("minutes")
-                                    .foregroundStyle(p.muted)
+                            if durationChoice == .custom {
+                                HStack(spacing: 6) {
+                                    TextField("30", text: $customMinutes)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 64)
+                                    Text("minutes")
+                                        .foregroundStyle(p.muted)
+                                }
                             }
                         }
+                        .disabled(stopwatchMode)
+                        .opacity(stopwatchMode ? 0.45 : 1)
+
+                        Toggle(isOn: $stopwatchMode) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "stopwatch")
+                                    .foregroundStyle(stopwatchMode ? p.accent : p.muted)
+                                Text("Just track time (stopwatch)")
+                                    .font(AppFont.callout)
+                                    .foregroundStyle(p.foreground)
+                            }
+                        }
+                        .toggleStyle(.switch)
+                        .tint(p.accent)
+                        .help("No set length. The clock counts up until you stop it, and the real time goes in your log.")
                     }
                 }
 

@@ -40,15 +40,19 @@ struct TimerView: View {
                 ZStack {
                     Circle()
                         .stroke(p.surfaceBorder, lineWidth: stroke)
+                    // Stopwatch has no end to progress toward, so the ring sits
+                    // full and static.
                     Circle()
-                        .trim(from: 0, to: controller.progress)
+                        .trim(from: 0, to: controller.isStopwatch ? 1 : controller.progress)
                         .stroke(active, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                         .animation(.linear(duration: 0.2), value: controller.progress)
                         .animation(.easeInOut(duration: 0.4), value: controller.isWarn)
 
                     VStack(spacing: 6) {
-                        Text(timeString(controller.remaining))
+                        Text(controller.isStopwatch
+                             ? elapsedString(controller.elapsed)
+                             : timeString(controller.remaining))
                             .font(.system(size: timeFont, weight: .thin, design: .default))
                             .monospacedDigit()
                             .foregroundStyle(active)
@@ -73,14 +77,18 @@ struct TimerView: View {
 
     private func controls(active: Color, p: Palette) -> some View {
         HStack(spacing: 14) {
-            circleButton("backward.end.fill", primary: false, active: active, p: p) {
-                controller.rewind()
+            // No rewind on a stopwatch: there's no planned time to claw back.
+            if !controller.isStopwatch {
+                circleButton("backward.end.fill", primary: false, active: active, p: p) {
+                    controller.rewind()
+                }
             }
             circleButton(controller.isPaused ? "play.fill" : "pause.fill",
                          primary: true, active: active, p: p) {
                 controller.togglePause()
             }
-            circleButton("forward.end.fill", primary: false, active: active, p: p) {
+            circleButton(controller.isStopwatch ? "stop.fill" : "forward.end.fill",
+                         primary: false, active: active, p: p) {
                 controller.finishBlock()
             }
         }
@@ -103,6 +111,15 @@ struct TimerView: View {
 
     private func timeString(_ t: TimeInterval) -> String {
         let total = Int(t.rounded(.up))
+        return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+
+    /// Count-up display: MM:SS, growing to HH:MM:SS past an hour.
+    private func elapsedString(_ t: TimeInterval) -> String {
+        let total = Int(t)
+        if total >= 3600 {
+            return String(format: "%02d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
+        }
         return String(format: "%02d:%02d", total / 60, total % 60)
     }
 }
