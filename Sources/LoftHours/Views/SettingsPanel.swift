@@ -48,7 +48,7 @@ struct SettingsPanel: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Settings")
-                    .font(AppFont.title3)
+                    .font(AppFont.heading)
                     .foregroundStyle(p.foreground)
                 Spacer()
                 Button {

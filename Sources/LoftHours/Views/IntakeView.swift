@@ -85,7 +85,7 @@ struct IntakeView: View {
                         Text(welcomeText.isEmpty ? "Loft Hours" : welcomeText)
                             .font(AppFont.wordmark)
                             .foregroundStyle(p.foreground)
-                        Text("Welcome to the loft. Let's get you set up.")
+                        Text("Good to see you. Let's make today count.")
                             .font(AppFont.body)
                             .foregroundStyle(p.muted)
                     }
@@ -196,8 +196,8 @@ struct IntakeView: View {
                     }
                 }
 
-                field("What would make this feel done?") {
-                    TextField("One thing that'll feel good to finish", text: $deliverable, axis: .vertical)
+                field("What would make this feel complete?") {
+                    TextField("It feels complete when...", text: $deliverable, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .font(AppFont.body)
                         .lineLimit(1...3)

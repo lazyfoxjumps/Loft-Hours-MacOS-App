@@ -101,7 +101,7 @@ struct ReminderEditor: View {
                     .textFieldStyle(.roundedBorder)
                     .font(AppFont.body)
             } else {
-                Text("A gentle ping to come do a focus block. The wording cycles so it stays fresh.")
+                Text("A gentle reminder from the loft when it's time to focus.")
                     .font(AppFont.caption)
                     .foregroundStyle(p.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -113,10 +113,13 @@ struct ReminderEditor: View {
                 palette: p
             )
 
-            HStack(spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
                 Text("When")
                     .font(AppFont.callout)
                     .foregroundStyle(p.foreground)
+                    // Nunito's baseline sits a touch high next to the AppKit
+                    // field; nudge so label and digits read as one line.
+                    .baselineOffset(-1)
                 BareStepperDatePicker(date: $anchor, showsDate: recurrence != .daily)
                     .fixedSize()
                     .padding(.horizontal, 6)
@@ -154,12 +157,21 @@ struct ReminderEditor: View {
                         )
                 }
                 .buttonStyle(.plain)
-                Button("Save") { onSave(draft) }
-                    .buttonStyle(.borderedProminent)
-                    .tint(p.accent)
-                    .controlSize(.small)
-                    .font(AppFont.callout)
-                    .disabled(!canSave)
+                // Same custom chrome as Cancel so the pair sit at identical
+                // heights; the system .borderedProminent rendered smaller.
+                Button(action: { onSave(draft) }) {
+                    Text("Save")
+                        .font(AppFont.callout)
+                        .foregroundStyle(canSave ? p.background : p.muted)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(canSave ? p.accent : p.surface)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSave)
             }
         }
         .padding(16)

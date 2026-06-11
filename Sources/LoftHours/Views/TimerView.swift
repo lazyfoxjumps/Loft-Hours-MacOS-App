@@ -25,7 +25,7 @@ struct TimerView: View {
             let timeFont = ring * 0.24
             let goalFont = max(11.0, min(ring * 0.0595, 18.7))
 
-            VStack(spacing: 36) {
+            VStack(spacing: 41) {
                 Spacer()
 
                 Text(controller.session?.goal ?? "")

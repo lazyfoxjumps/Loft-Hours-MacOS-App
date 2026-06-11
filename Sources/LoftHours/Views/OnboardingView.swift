@@ -75,7 +75,7 @@ struct OnboardingView: View {
             // Negative spacing eats the whitespace baked into the wordmark
             // image's bottom edge, so the tagline visually hangs off the
             // wordmark instead of floating toward the buttons.
-            VStack(spacing: -10) {
+            VStack(spacing: -24) {
                 Group {
                     if let mark = AppImages.wordmark {
                         Image(nsImage: mark)
@@ -92,7 +92,7 @@ struct OnboardingView: View {
                 }
 
                 Text("Welcome to the loft. Let's get you set up.")
-                    .font(AppFont.body)
+                    .font(AppFont.nunito(15))
                     .foregroundStyle(p.muted)
                     .multilineTextAlignment(.center)
             }

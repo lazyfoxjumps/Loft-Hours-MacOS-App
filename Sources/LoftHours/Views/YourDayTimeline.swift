@@ -56,7 +56,7 @@ struct YourDayTimeline: View {
             }
 
             if entries.isEmpty {
-                Text("Nothing on the rail yet. Add a reminder and I'll watch the clock for you.")
+                Text("Nothing on your list yet. Add a reminder to get a scheduled notification from me.")
                     .font(AppFont.caption)
                     .foregroundStyle(p.muted)
             } else {
