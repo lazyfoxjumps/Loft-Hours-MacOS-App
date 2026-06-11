@@ -24,7 +24,7 @@ Loft Hours is built for exactly that. It's a digital **body double**, that "some
 
 It does **not** nag you. It does **not** gamify your life with streaks and confetti and guilt. It quietly sets up your work session, stays out of your way while you work, and then shows you the receipts of what you actually did. That's it.
 
-> **Heads up:** Loft Hours is **version 1.0**. It isn't notarized by Apple yet, so the very first time you open it macOS will ask you to confirm. That's a one-time step, walked through [below](#apple-wont-let-me-open-it-the-gatekeeper-bit).
+> **Heads up:** Loft Hours is **version 1.1**. It isn't notarized by Apple yet, so the very first time you open it macOS will ask you to confirm. That's a one-time step, walked through [below](#apple-wont-let-me-open-it-the-gatekeeper-bit).
 
 ---
 
@@ -46,7 +46,7 @@ The whole vibe: **gentle structure, zero shame.**
 
 ## What a session actually looks like
 
-1. **Tell it what you're working on.** Add one task or a little list ("Today I'm working on... and also..."). Pick how long you want to go (25, 50, 90 minutes, or your own number).
+1. **Tell it what you're working on.** Add one task or a little list ("Today I'm working on... and also..."). Pick how long you want to go (25, 50, 90 minutes, or your own number), or flip on **"Just track time"** and let a stopwatch count up instead, no planned length needed.
 2. **Decide what "done" looks like.** One concrete thing that'll feel finished. This is the secret sauce, it turns "ugh, homework" into "answer questions 1 to 5."
 3. **Set the room (optional).** Want Loft Hours to flip on Do Not Disturb and close Slack/Twitter/whatever for you? Say the word. Don't want that? Skip it. Totally up to you.
 4. **Work.** A clean focus timer appears. The app goes quiet and lets you cook. Soft chimes mark the halfway point and the last minute.
@@ -58,17 +58,19 @@ The whole vibe: **gentle structure, zero shame.**
 
 ## Features
 
-- 👋 **A welcome that knows your name** — tell Loft Hours your name once when you first open it, and the home screen greets you with a short, rotating hello that changes with the day (a nudge to start the week on Monday, a lift toward Friday, something slower on the weekend). Change your name anytime in Settings.
+- 👋 **A welcome that knows your name** — sign in with Google (which hooks up calendar blocking in the same breath) or continue as a guest, tell Loft Hours what to call you, and the home screen greets you with a short, rotating hello that changes with the day (a nudge to start the week on Monday, a lift toward Friday, something slower on the weekend). Change your name anytime in Settings.
 - 🎯 **Multi-task intake** — line up everything you want to tackle, not just one thing.
 - ⭕ **Visual focus timer** — a calm circular countdown so you always know where you are in the block.
+- ⏱️ **Stopwatch Mode** — when a countdown feels like pressure, flip on "Just track time" and the timer counts up instead. Stop whenever you're done and the session logs its real length.
+- ⏰ **Reminders & "Your day"** — set little nudges for tasks ("water the plants") or a gentle "time to focus" ping, once or daily/weekly/monthly. Today's reminders live on a tidy timeline on the home screen with a NOW marker, so you can see your day at a glance.
 - 🔕 **Do Not Disturb toggle** — flip your Mac's Focus mode on/off right from the app (one-time setup, see [below](#optional-do-not-disturb--focus-setup)). If you haven't set it up yet, the home screen gently points you to it instead of failing silently.
 - 🚪 **App wrangling** — auto-close the apps that distract you when a session starts, and reopen them after if you want.
 - 📅 **Google Calendar blocking (optional)** — connect your Google account once, and every focus block drops a "busy" event on your calendar for the length of the timer, titled "Loft Hours - your tasks", so the people who share your calendar can see you're heads-down. Finished blocks stay on your calendar.
 - ☕ **Break check-ins** — a rotating mix of encouragement and gentle body-care reminders (drink water, stretch, rest your eyes) between blocks, never naggy.
 - ✅ **Done-checklist wrap-up** — check off what you finished, and add as many extra "Other" things you did as you want.
 - 📝 **Automatic session logs** — every session is saved as a plain Markdown file in `~/Documents/study-log/`. They're yours, readable in any text app, forever.
-- 📊 **Weekly & monthly reviews** — see your focused hours, your streak, when you do your best work, and patterns you'd never notice on your own.
-- 🎨 **Themes** — opens in a warm **Light Academia** look, with five more cozy palettes a click away (Dark Academia, Forest Cottagecore, Candlelit Nocturne, Linen & Latte, and Classic Midnight).
+- 📊 **Weekly & monthly reviews** — see your focused hours, your streak, when you do your best work, and patterns you'd never notice on your own. A built-in **Logs** pane lets you browse every past session right inside the app, goal, done-list, notes and all.
+- 🎨 **Themes** — opens in a warm **Light Academia** look, with six more curated palettes a click away (Dark Academia, Candlelit Nocturne, Monochrome Magic, Modern Minimalist, Forest Cottagecore, and Linen & Latte).
 - 💾 **Crash-safe + resume** — if your Mac sleeps or quits mid-session, Loft Hours picks up where you left off and can pre-fill your next session from last time.
 
 > Your data stays on your machine. There's no account, no cloud, no tracking, and no internet required. The one exception is the **optional** Google Calendar blocking above: if (and only if) you turn it on and connect your account, Loft Hours talks to Google to add your focus blocks. Leave it off and nothing ever leaves your computer. The logs are always just Markdown files you own.
@@ -82,7 +84,7 @@ The whole vibe: **gentle structure, zero shame.**
 - An **Apple Silicon Mac** (M1, M2, M3, or M4). Loft Hours does **not** run on older Intel Macs.
 
 ### Steps
-1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-1.0.dmg`.
+1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-1.1.dmg`.
 2. Double-click the downloaded `.dmg` to open it.
 3. **Drag the Loft Hours icon onto the Applications folder** in the window that pops up.
 4. Open your **Applications** folder and try to launch Loft Hours.
