@@ -1,4 +1,40 @@
 import SwiftUI
+import AppKit
+
+/// AppKit-backed stepper date field with the bezel stripped, so the editor can
+/// draw its own box around it. The native bezel hugs the digits with zero side
+/// padding and exposes no knob for it; SwiftUI padding only grows the outside
+/// of the control. Bezel off + our own background = real left/right breathing
+/// room without making the field any taller.
+private struct BareStepperDatePicker: NSViewRepresentable {
+    @Binding var date: Date
+    var showsDate: Bool
+
+    func makeNSView(context: Context) -> NSDatePicker {
+        let picker = NSDatePicker()
+        picker.datePickerStyle = .textFieldAndStepper
+        picker.isBezeled = false
+        picker.drawsBackground = false
+        picker.font = NSFont(name: "Nunito", size: 12) ?? .systemFont(ofSize: 12)
+        picker.target = context.coordinator
+        picker.action = #selector(Coordinator.changed(_:))
+        return picker
+    }
+
+    func updateNSView(_ picker: NSDatePicker, context: Context) {
+        picker.datePickerElements = showsDate ? [.yearMonthDay, .hourMinute] : [.hourMinute]
+        if picker.dateValue != date { picker.dateValue = date }
+        context.coordinator.parent = self
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject {
+        var parent: BareStepperDatePicker
+        init(_ parent: BareStepperDatePicker) { self.parent = parent }
+        @objc func changed(_ sender: NSDatePicker) { parent.date = sender.dateValue }
+    }
+}
 
 /// The add/edit form for a reminder, shared by the home screen's quick-add
 /// popover and the Settings > Reminders tab. Kind toggle (task vs "time to
@@ -77,14 +113,20 @@ struct ReminderEditor: View {
                 palette: p
             )
 
-            DatePicker(
-                "When",
-                selection: $anchor,
-                displayedComponents: recurrence == .daily ? [.hourAndMinute] : [.date, .hourAndMinute]
-            )
-            .datePickerStyle(.stepperField)
-            .font(AppFont.callout)
-            .foregroundStyle(p.foreground)
+            HStack(spacing: 8) {
+                Text("When")
+                    .font(AppFont.callout)
+                    .foregroundStyle(p.foreground)
+                BareStepperDatePicker(date: $anchor, showsDate: recurrence != .daily)
+                    .fixedSize()
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color(nsColor: .textBackgroundColor))
+                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(p.surfaceBorder, lineWidth: 1))
+                    )
+            }
             .frame(maxWidth: .infinity)
 
             if let note = scheduleNote {

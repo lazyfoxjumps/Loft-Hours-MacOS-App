@@ -46,7 +46,7 @@ struct RemindersSheet: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Task reminders and recurring time-to-focus nudges. macOS delivers them at the right moment, even when the loft is in the background.")
+                        Text("Task reminders and recurring time-to-focus nudges. macOS delivers them at the right moment, even when Loft Hours is in the background.")
                             .font(AppFont.caption)
                             .foregroundStyle(p.muted)
                             .fixedSize(horizontal: false, vertical: true)

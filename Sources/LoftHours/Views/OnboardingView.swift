@@ -69,20 +69,32 @@ struct OnboardingView: View {
     // MARK: - Step one: wordmark + sign-in choice
 
     private func welcomeStep(_ p: Palette) -> some View {
-        VStack(spacing: 15) {
-            Group {
-                if let mark = AppImages.wordmark {
-                    Image(nsImage: mark)
-                        .resizable()
-                        .renderingMode(.template)
-                        .aspectRatio(3, contentMode: .fit)
-                        .frame(width: 450, height: 150)
-                        .foregroundStyle(p.foreground)
-                } else {
-                    Text("Loft Hours")
-                        .font(AppFont.gaegu(67))
-                        .foregroundStyle(p.foreground)
+        // Wordmark and tagline read as one unit (tight gap), then a roomier,
+        // visually balanced gap before the sign-in choices.
+        VStack(spacing: 26) {
+            // Negative spacing eats the whitespace baked into the wordmark
+            // image's bottom edge, so the tagline visually hangs off the
+            // wordmark instead of floating toward the buttons.
+            VStack(spacing: -10) {
+                Group {
+                    if let mark = AppImages.wordmark {
+                        Image(nsImage: mark)
+                            .resizable()
+                            .renderingMode(.template)
+                            .aspectRatio(3, contentMode: .fit)
+                            .frame(width: 450, height: 150)
+                            .foregroundStyle(p.foreground)
+                    } else {
+                        Text("Loft Hours")
+                            .font(AppFont.gaegu(67))
+                            .foregroundStyle(p.foreground)
+                    }
                 }
+
+                Text("Welcome to the loft. Let's get you set up.")
+                    .font(AppFont.body)
+                    .foregroundStyle(p.muted)
+                    .multilineTextAlignment(.center)
             }
 
             VStack(spacing: 12) {
