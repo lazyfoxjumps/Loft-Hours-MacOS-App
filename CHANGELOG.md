@@ -5,6 +5,20 @@ All notable changes to Loft Hours are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+A friction-removal pass: reminders that bend to your actual week, editing without the scroll hunt, and a window that can no longer squish itself into overlapping buttons.
+
+### Added
+- Custom reminder schedules: pick the exact days of the week ("Mon, Wed, Fri") or repeat every few days ("every other day"), alongside the existing once/daily/weekly/monthly options.
+- Reminders now sync to Google Calendar when calendar sync is on: each reminder becomes a free (non-busy) recurring event with a popup at fire time, edits update the event, and deleting the reminder removes it.
+
+### Changed
+- Editing a reminder opens that one reminder in its own popup, both from a "Your day" rail row and from the All reminders list. No more scrolling to the bottom of the list to find the form.
+- The window now has a proper minimum size, and the footer wordmark sits in its own strip, so the gear, the Review button, and "Let's get into it" can never overlap each other again.
+- The close button on the Reminders, Review, and Settings sheets is bigger and easier to see.
+- Review lost its redundant Done button (the close button already does that), and "Reveal report in Finder" is now a clearly visible "Show in Finder" button on every theme.
+
 ## [1.1.0] - 2026-06-11
 
 The cozy update: a fresh set of themes, a friendlier first open, a stopwatch for
