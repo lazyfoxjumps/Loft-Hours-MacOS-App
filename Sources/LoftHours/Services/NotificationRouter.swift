@@ -33,7 +33,11 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unc
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let kind = response.notification.request.content.userInfo[Self.kindKey] as? String
-        if kind == Reminder.Kind.focusNudge.rawValue {
+        // Focus nudges and routine nudges both pull the app forward so the user
+        // lands on the home screen ready to start: the routine's window is open
+        // when its nudge fires, so its one-click Start CTA is already showing.
+        // Task reminders are informational and just dismiss.
+        if kind == Reminder.Kind.focusNudge.rawValue || kind == RoutineService.notificationKind {
             Task { @MainActor in AppActivator.bringToFront() }
         }
         completionHandler()

@@ -19,7 +19,7 @@ final class RoutineService: ObservableObject {
     /// userInfo value for `NotificationRouter.kindKey` on routine nudges.
     /// Unknown kinds just dismiss in the router today; tap routing comes with
     /// the runner phase.
-    static let notificationKind = "routine"
+    nonisolated static let notificationKind = "routine"
 
     init(defaults: UserDefaults = .standard, auth: GoogleAuth? = nil, config: ConfigStore? = nil) {
         self.defaults = defaults

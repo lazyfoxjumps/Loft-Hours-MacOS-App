@@ -11,6 +11,7 @@ struct RootView: View {
     @EnvironmentObject private var reminderService: ReminderService
     @EnvironmentObject private var routineService: RoutineService
     @EnvironmentObject private var routineTracker: RoutineTracker
+    @EnvironmentObject private var routineRunner: RoutineRunner
 
     private var isDone: Bool {
         if case .done = controller.phase { return true }
@@ -35,17 +36,25 @@ struct RootView: View {
                 .ignoresSafeArea()
 
             Group {
-                switch controller.phase {
-                case .intake:
-                    IntakeView()
-                case .running:
-                    TimerView()
-                case .breakTime:
-                    BreakView()
-                case .wrapUp:
-                    WrapUpView()
-                case .done(let logPath):
-                    DoneView(logPath: logPath)
+                // A running routine takes over the whole window: it lives on
+                // its own lightweight runner, separate from the session phase,
+                // so it branches ahead of the phase switch. The home screen is
+                // hidden meanwhile, so a session and a routine can't both start.
+                if routineRunner.active != nil {
+                    RoutineTimerView()
+                } else {
+                    switch controller.phase {
+                    case .intake:
+                        IntakeView()
+                    case .running:
+                        TimerView()
+                    case .breakTime:
+                        BreakView()
+                    case .wrapUp:
+                        WrapUpView()
+                    case .done(let logPath):
+                        DoneView(logPath: logPath)
+                    }
                 }
             }
 
@@ -72,6 +81,16 @@ struct RootView: View {
             // Same idempotent re-mirror for routine nudges, and it refills the
             // every-N-days rolling window of one-shot triggers.
             routineService.rescheduleAll()
+        }
+        // The home screen's start CTA writes the routine here; hand it to the
+        // runner, which takes over the window. Guarded so a notification-driven
+        // start can't hijack a focus session already on the clock.
+        .onChange(of: controller.routineToStart) {
+            guard let routine = controller.routineToStart else { return }
+            controller.routineToStart = nil
+            if routineRunner.active == nil, controller.phase == .intake {
+                routineRunner.start(routine)
+            }
         }
         .animation(.easeInOut(duration: 0.4), value: theme.selected)
         .sheet(isPresented: $controller.showSettings) {
