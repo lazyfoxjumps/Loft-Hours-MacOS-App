@@ -119,6 +119,39 @@ struct CalendarService {
         return body
     }
 
+    // MARK: - Routine events
+
+    /// The event JSON for a routine: a slot spanning the routine's full window
+    /// (start time + duration), recurring with its schedule, and always
+    /// transparent ("Free"), never opaque, because a routine shouldn't block
+    /// the calendar the way a focus block does. No calendar pop-ups either;
+    /// the app's own nudge covers that.
+    static func routineEventBody(_ routine: Routine, start: Date, timeZone: String, calendar: Calendar = .current) -> [String: Any] {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let end = start.addingTimeInterval(TimeInterval(max(1, routine.durationMin) * 60))
+        var body: [String: Any] = [
+            "summary": eventTitle(forGoal: routine.displayName),
+            "start": ["dateTime": formatter.string(from: start), "timeZone": timeZone],
+            "end": ["dateTime": formatter.string(from: end), "timeZone": timeZone],
+            "transparency": "transparent",
+            "reminders": ["useDefault": false],
+            "description": "Routine created by Loft Hours",
+        ]
+        if let rule = recurrenceRule(for: routine.scheduleProxy, calendar: calendar) {
+            body["recurrence"] = [rule]
+        }
+        return body
+    }
+
+    /// Create the calendar event mirroring a routine. Returns the event id, or
+    /// nil when not connected, nothing left to fire, or Google rejected it.
+    func createRoutineEvent(_ routine: Routine) async -> String? {
+        guard let start = routine.nextFireDate() else { return nil }
+        let body = Self.routineEventBody(routine, start: start, timeZone: TimeZone.current.identifier)
+        return await postEvent(body)
+    }
+
     /// Create the calendar event mirroring a reminder. Returns the event id, or
     /// nil when not connected, nothing left to fire, or Google rejected it.
     func createReminderEvent(_ reminder: Reminder) async -> String? {

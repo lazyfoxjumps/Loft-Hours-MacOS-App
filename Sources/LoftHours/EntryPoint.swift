@@ -15,6 +15,7 @@ enum EntryPoint {
             SelfTest.runCalendarTest()
             SelfTest.runWelcomeTest()
             SelfTest.runReminderTest()
+            MainActor.assumeIsolated { SelfTest.runRoutineTest() }
             return
         }
         LoftHoursApp.main()

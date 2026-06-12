@@ -64,6 +64,26 @@ enum Messages {
         "Hey, it's that time. Let's make some quiet progress.",
     ]
 
+    /// Bodies for routine start notifications. Generic on purpose so the same
+    /// pool fits a morning routine, a night routine, or anything in between;
+    /// the notification title already carries the routine's own name. A fresh
+    /// line is picked at scheduling time and re-rolled at every launch, so the
+    /// same routine doesn't sound like a broken record.
+    static let routineNudges = [
+        "It's that time again. Ease into the first step.",
+        "Your routine window just opened. No rush, just start.",
+        "Same time, same you. Let's run through it together.",
+        "The loft is ready when you are. One small step to begin.",
+        "Time to do the thing. You know the one.",
+        "Little steps, every time. The first one is waiting.",
+        "Right on schedule. Tick one box and the rest will follow.",
+        "Your future self asked for this one. Let's not keep them waiting.",
+    ]
+
+    /// Caption under the finish button on the routine timer once every task is
+    /// ticked. Invitation, not pressure: nothing auto-closes.
+    static let routineAllDone = "That's the whole list. Finish up whenever you're ready."
+
     // MARK: - Home-screen welcome greeting
 
     /// Cycling greeting that replaces the "Loft Hours" wordmark on the home

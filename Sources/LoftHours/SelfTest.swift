@@ -380,6 +380,139 @@ enum SelfTest {
         print("REMINDER: OK")
     }
 
+    /// Headless check of the routines feature: the schedule proxy delegating to
+    /// Reminder's recurrence math, the window/active helpers, the Free (never
+    /// Busy) calendar event body, the Codable round trip with a minimal-blob
+    /// upgrade fixture, the per-day tracker's upsert/tick/finish/reload cycle,
+    /// and the nudge copy pool. Pure logic plus temp-dir file IO; no
+    /// UNUserNotificationCenter (needs a launched bundle).
+    @MainActor
+    static func runRoutineTest() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(identifier: "UTC")!
+        fmt.dateFormat = "yyyy-MM-dd HH:mm"
+
+        // A daily 45-minute morning routine anchored at 07:00.
+        let anchor = fmt.date(from: "2026-07-31 07:00")!
+        var morning = Routine(name: "Morning routine", emoji: "☀️", anchor: anchor, durationMin: 45, recurrence: .daily)
+        morning.tasks = [
+            RoutineTask(emoji: "🛏️", title: "Make the bed"),
+            RoutineTask(emoji: "🪥", title: "Brush teeth"),
+            RoutineTask(emoji: "☕", title: "Coffee"),
+        ]
+        precondition(morning.displayName == "☀️ Morning routine", "ROUTINE: displayName mismatch")
+        precondition(morning.tasks[0].displayTitle == "🛏️ Make the bed", "ROUTINE: task displayTitle mismatch")
+
+        // Schedule proxy: today's occurrence, the window span, and isActive
+        // inside vs outside the window.
+        let now = fmt.date(from: "2026-08-10 07:20")!
+        let start = fmt.date(from: "2026-08-10 07:00")!
+        precondition(morning.occurrenceToday(now: now, calendar: cal) == start, "ROUTINE: daily occurrence mismatch")
+        let window = morning.windowToday(now: now, calendar: cal)
+        precondition(window?.lowerBound == start, "ROUTINE: window start mismatch")
+        precondition(window?.upperBound == start.addingTimeInterval(45 * 60), "ROUTINE: window should span durationMin")
+        precondition(morning.isActive(now: now, calendar: cal), "ROUTINE: 07:20 should be inside the 07:00+45m window")
+        precondition(!morning.isActive(now: fmt.date(from: "2026-08-10 08:00")!, calendar: cal), "ROUTINE: 08:00 should be outside the window")
+        precondition(morning.scheduleDescription(calendar: cal).hasSuffix(", 45 min"), "ROUTINE: schedule description should carry the window length")
+
+        // Recurrence variety flows through the proxy: weekday set triggers and
+        // the monthly 29-31 clamp.
+        var mwf = morning
+        mwf.recurrence = .custom
+        mwf.customMode = .weekdays
+        mwf.customWeekdays = [2, 4, 6]
+        precondition(mwf.notificationTriggers(now: now, calendar: cal).count == 3, "ROUTINE: one trigger per picked weekday")
+        var endOfMonth = morning
+        endOfMonth.anchor = fmt.date(from: "2026-07-31 21:00")!
+        endOfMonth.recurrence = .monthly
+        precondition(endOfMonth.monthlyDayClamped(calendar: cal), "ROUTINE: day 31 should be flagged as clamped")
+
+        // Calendar mirroring: the event spans the full window, recurs with the
+        // schedule, and is always Free (transparent), never Busy.
+        let body = CalendarService.routineEventBody(morning, start: start, timeZone: "UTC", calendar: cal)
+        precondition(body["transparency"] as? String == "transparent", "ROUTINE: calendar event must be Free, not Busy")
+        precondition((body["recurrence"] as? [String])?.first == "RRULE:FREQ=DAILY", "ROUTINE: daily RRULE mismatch")
+        precondition(body["summary"] as? String == "Loft Hours - ☀️ Morning routine", "ROUTINE: event title mismatch")
+        let iso = ISO8601DateFormatter()
+        if let s = (body["start"] as? [String: String])?["dateTime"].flatMap(iso.date(from:)),
+           let e = (body["end"] as? [String: String])?["dateTime"].flatMap(iso.date(from:)) {
+            precondition(e.timeIntervalSince(s) == 45 * 60, "ROUTINE: event should span the window")
+        } else {
+            preconditionFailure("ROUTINE: event body missing start/end")
+        }
+        var once = morning
+        once.recurrence = .once
+        precondition(CalendarService.routineEventBody(once, start: start, timeZone: "UTC", calendar: cal)["recurrence"] == nil, "ROUTINE: once should have no RRULE")
+
+        // Persistence round trip through the same helpers the service uses.
+        let saved = [morning, mwf, endOfMonth]
+        let restored = RoutineService.decode(RoutineService.encode(saved))
+        precondition(restored == saved, "ROUTINE: codable round trip mismatch")
+        precondition(RoutineService.decode(nil).isEmpty, "ROUTINE: nil data should decode to empty")
+
+        // A minimal blob (as if saved by an older build before optional fields
+        // existed) must still decode with defaults filling in.
+        let legacyJSON = """
+        [{"id":"6F9619FF-8B86-D011-B42D-00CF4FC964FF","name":"Night routine","anchor":0}]
+        """
+        let legacy = RoutineService.decode(legacyJSON.data(using: .utf8))
+        precondition(legacy.count == 1, "ROUTINE: legacy blob failed to decode")
+        precondition(legacy[0].name == "Night routine" && legacy[0].durationMin == 30
+                        && legacy[0].recurrence == .daily && legacy[0].notify && legacy[0].tasks.isEmpty,
+                     "ROUTINE: legacy defaults mismatch")
+
+        // Tracker: start, tick, persist on every mutation, reload from disk,
+        // finish, per-day reads, and the activity counts the calendar uses.
+        let tmp = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+            .appendingPathComponent("lofthours-routine-\(UInt32.random(in: 0..<UInt32.max))", isDirectory: true)
+        let cfg = AppConfig(logDirectory: tmp)
+        let tracker = RoutineTracker(config: cfg, calendar: cal)
+
+        tracker.recordStart(morning, now: now)
+        tracker.setTask(morning.tasks[0].id, done: true, routineId: morning.id, now: now)
+        tracker.setTask(morning.tasks[1].id, done: true, routineId: morning.id, now: now)
+        tracker.setTask(morning.tasks[1].id, done: false, routineId: morning.id, now: now)
+
+        // A second instance reading the same file sees the ticks: crash safety.
+        let reloaded = RoutineTracker(config: cfg, calendar: cal)
+        var entry = reloaded.entryToday(for: morning.id, now: now)
+        precondition(entry?.doneTaskIds == [morning.tasks[0].id], "ROUTINE: tracker reload lost the ticks")
+        precondition(entry?.totalTasks == 3 && entry?.finishedAt == nil, "ROUTINE: in-progress entry mismatch")
+        precondition(entry?.progressText == "1/3 tasks", "ROUTINE: progress text mismatch")
+
+        // Re-starting the same routine the same day resumes (upsert, ticks
+        // kept); a renamed routine refreshes the denormalized fields.
+        var renamed = morning
+        renamed.name = "Slow morning"
+        reloaded.recordStart(renamed, now: now.addingTimeInterval(60))
+        entry = reloaded.entryToday(for: morning.id, now: now)
+        precondition(entry?.doneTaskIds == [morning.tasks[0].id] && entry?.name == "Slow morning", "ROUTINE: upsert should keep ticks and refresh the name")
+
+        reloaded.recordFinish(morning.id, now: now.addingTimeInterval(120))
+        precondition(reloaded.entryToday(for: morning.id, now: now)?.finishedAt != nil, "ROUTINE: finish not recorded")
+        precondition(reloaded.entries(on: now).count == 1, "ROUTINE: expected one entry today")
+        precondition(reloaded.entries(on: fmt.date(from: "2026-08-09 12:00")!).isEmpty, "ROUTINE: yesterday should be empty")
+
+        // Activity counts key by start of day; an untouched run doesn't count.
+        var untouched = Routine(name: "Night routine", emoji: "🌙", anchor: anchor, durationMin: 30, recurrence: .daily)
+        untouched.tasks = [RoutineTask(title: "Wind down")]
+        reloaded.recordStart(untouched, now: now)
+        let counts = reloaded.activityCounts()
+        precondition(counts[cal.startOfDay(for: now)] == 1, "ROUTINE: activity count mismatch (untouched runs shouldn't count)")
+        precondition(RoutineTracker.dayKey(now, calendar: cal) == "2026-08-10", "ROUTINE: day key mismatch")
+
+        // Nudge pool: non-empty, fresh lines, clean of em/en dashes per the
+        // voice guideline; same for the all-ticked caption.
+        precondition(!Messages.routineNudges.isEmpty, "ROUTINE: nudge pool is empty")
+        for line in Messages.routineNudges + [Messages.routineAllDone] {
+            precondition(!line.contains("\u{2014}") && !line.contains("\u{2013}"), "ROUTINE: dash in copy: \(line)")
+        }
+        print("ROUTINE: OK")
+    }
+
     /// Headless check of the crash-safe orphan sweep: drop an active-session.json
     /// in a temp log dir, sweep it, and verify it moved into abandoned/.
     static func runOrphanSweepTest() {
