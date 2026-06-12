@@ -5,7 +5,7 @@ struct LoftHoursApp: App {
     @StateObject private var theme = ThemeStore()
     @StateObject private var controller: SessionController
     @StateObject private var googleAuth: GoogleAuth
-    @StateObject private var reminderService = ReminderService()
+    @StateObject private var reminderService: ReminderService
 
     init() {
         let cfg = ConfigStore()
@@ -13,6 +13,9 @@ struct LoftHoursApp: App {
         _config = StateObject(wrappedValue: cfg)
         _googleAuth = StateObject(wrappedValue: auth)
         _controller = StateObject(wrappedValue: SessionController(config: cfg, auth: auth))
+        // Reminders mirror into Google Calendar when sync is on, so the
+        // service needs the same auth + config the session path uses.
+        _reminderService = StateObject(wrappedValue: ReminderService(auth: auth, config: cfg))
         // Claim the notification-center delegate so reminder taps route back
         // into the app and reminders still banner while we're frontmost.
         NotificationRouter.shared.install()

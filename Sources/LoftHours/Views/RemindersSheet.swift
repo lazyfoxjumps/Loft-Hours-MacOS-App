@@ -1,30 +1,19 @@
 import SwiftUI
 
-/// The "All reminders" management sheet, opened from the home rail's pill (or
-/// by tapping a rail row, which deep-links straight into that reminder's edit
-/// form via `SessionController.reminderToEdit`). This replaces the old
-/// Settings > Reminders tab so reminders live one click from where they show.
+/// The "All reminders" management sheet, opened from the home rail's pill.
+/// Editing never happens inline: the pencil (or Add reminder) opens the editor
+/// in its own sheet on top, so nobody scrolls a long list to find the form.
+/// (Tapping a rail row on the home screen skips this sheet entirely and opens
+/// the editor directly via `SessionController.reminderToEdit`.)
 struct RemindersSheet: View {
     @EnvironmentObject private var controller: SessionController
     @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var reminderService: ReminderService
 
-    /// Whether the add/edit form is showing, and which reminder it edits
+    /// Whether the editor sheet is up, and which reminder it edits
     /// (nil = creating a new one).
     @State private var showEditor = false
     @State private var editingReminder: Reminder? = nil
-
-    /// ScrollViewReader anchor for the inline editor.
-    private static let editorAnchor = "reminder-editor"
-
-    /// Scroll the inline editor into view once it has laid out.
-    private func scrollToEditor(_ proxy: ScrollViewProxy) {
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                proxy.scrollTo(Self.editorAnchor, anchor: .bottom)
-            }
-        }
-    }
 
     var body: some View {
         let p = theme.palette
@@ -34,88 +23,55 @@ struct RemindersSheet: View {
                     .font(AppFont.heading)
                     .foregroundStyle(p.foreground)
                 Spacer()
-                Button {
+                SheetCloseButton(palette: p) {
                     controller.showReminders = false
-                } label: {
-                    Image(systemName: "xmark")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(p.muted)
             }
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Task reminders and recurring time-to-focus nudges. macOS delivers them at the right moment, even when Loft Hours is in the background.")
-                            .font(AppFont.caption)
-                            .foregroundStyle(p.muted)
-                            .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Task reminders and recurring time-to-focus nudges. macOS delivers them at the right moment, even when Loft Hours is in the background.")
+                        .font(AppFont.caption)
+                        .foregroundStyle(p.muted)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        ForEach(reminderService.reminders) { reminder in
-                            reminderRow(reminder, p)
-                        }
-
-                        if showEditor {
-                            VStack(spacing: 0) {
-                                ReminderEditor(
-                                    existing: editingReminder,
-                                    onSave: { reminder in
-                                        if editingReminder == nil {
-                                            reminderService.add(reminder)
-                                        } else {
-                                            reminderService.update(reminder)
-                                        }
-                                        showEditor = false
-                                        editingReminder = nil
-                                    },
-                                    onCancel: {
-                                        showEditor = false
-                                        editingReminder = nil
-                                    }
-                                )
-                                .id(editingReminder?.id)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(p.surface)
-                                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.surfaceBorder, lineWidth: 1))
-                                )
-                            }
-                            .id(Self.editorAnchor)
-                        } else {
-                            Button {
-                                editingReminder = nil
-                                showEditor = true
-                            } label: {
-                                Label("Add reminder", systemImage: "plus")
-                                    .font(AppFont.caption)
-                                    .foregroundStyle(p.accent)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                    ForEach(reminderService.reminders) { reminder in
+                        reminderRow(reminder, p)
                     }
-                }
-                // The editor appears at the bottom of the list, so bring it
-                // into view whenever it opens (or switches target) — otherwise
-                // a long list hides it below the fold and the deep-link from
-                // the home rail looks like a no-op.
-                .onChange(of: showEditor) {
-                    if showEditor { scrollToEditor(proxy) }
-                }
-                .onChange(of: editingReminder) {
-                    if showEditor { scrollToEditor(proxy) }
+
+                    Button {
+                        editingReminder = nil
+                        showEditor = true
+                    } label: {
+                        Label("Add reminder", systemImage: "plus")
+                            .font(AppFont.caption)
+                            .foregroundStyle(p.accent)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .padding(20)
         .frame(width: 400, height: 480)
         .background(p.background)
-        .onAppear {
-            // Deep-link from a rail row: open straight into that reminder.
-            if let target = controller.reminderToEdit {
-                editingReminder = target
-                showEditor = true
-                controller.reminderToEdit = nil
-            }
+        .sheet(isPresented: $showEditor) {
+            ReminderEditor(
+                existing: editingReminder,
+                onSave: { reminder in
+                    if editingReminder == nil {
+                        reminderService.add(reminder)
+                    } else {
+                        reminderService.update(reminder)
+                    }
+                    showEditor = false
+                    editingReminder = nil
+                },
+                onCancel: {
+                    showEditor = false
+                    editingReminder = nil
+                }
+            )
+            .environmentObject(theme)
         }
     }
 
@@ -171,5 +127,30 @@ struct RemindersSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.surfaceBorder, lineWidth: 1))
         )
         .opacity(reminder.enabled ? 1 : 0.6)
+    }
+}
+
+/// The shared close button for the app's sheets: a generously sized X with a
+/// real hit target, so it stays easy to spot and click for everyone (the old
+/// bare 13pt glyph was too small for impaired vision).
+struct SheetCloseButton: View {
+    let palette: Palette
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(palette.foreground)
+                .frame(width: 32, height: 32)
+                .background(
+                    Circle()
+                        .fill(palette.surface)
+                        .overlay(Circle().stroke(palette.surfaceBorder, lineWidth: 1))
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("Close")
     }
 }

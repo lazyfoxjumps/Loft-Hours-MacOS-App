@@ -101,13 +101,9 @@ struct ReviewView: View {
                 .font(AppFont.heading)
                 .foregroundStyle(p.foreground)
             Spacer()
-            Button {
+            SheetCloseButton(palette: p) {
                 controller.showReview = false
-            } label: {
-                Image(systemName: "xmark")
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(p.muted)
         }
     }
 
@@ -292,7 +288,7 @@ struct ReviewView: View {
                 Button {
                     NSWorkspace.shared.activateFileViewerSelecting([log.url])
                 } label: {
-                    Label("Reveal in Finder", systemImage: "folder")
+                    Label("Show in Finder", systemImage: "folder")
                         .font(AppFont.caption)
                         .foregroundStyle(p.accent)
                         .padding(.horizontal, 10)
@@ -350,25 +346,28 @@ struct ReviewView: View {
         return "\(short(log.energyStart))→\(short(log.energyEnd))"
     }
 
+    /// Just the report button now; the X up top already closes the sheet, so
+    /// a Done button was pure redundancy. Custom chrome (accent fill, background
+    /// text) so it stays visible on every theme, unlike the system .bordered
+    /// style that nearly vanished into dark backgrounds.
+    @ViewBuilder
     private func footer(_ p: Palette) -> some View {
-        HStack {
-            if pane != .logs, let url = reportURL {
-                Button("Reveal report in Finder") {
+        if pane != .logs, let url = reportURL {
+            HStack {
+                Button {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
+                } label: {
+                    Label("Show in Finder", systemImage: "folder")
+                        .font(AppFont.callout)
+                        .foregroundStyle(p.background)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(p.accent))
                 }
-                .buttonStyle(.bordered)
-                .tint(p.accent)
-                .controlSize(.small)
-                .font(AppFont.callout)
+                .buttonStyle(.plain)
+                .help("Show this report in Finder")
+                Spacer()
             }
-            Spacer()
-            Button("Done") {
-                controller.showReview = false
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(p.accent)
-            .controlSize(.small)
-            .font(AppFont.callout)
         }
     }
 

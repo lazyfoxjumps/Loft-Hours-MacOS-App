@@ -322,11 +322,54 @@ enum SelfTest {
         let friday = fmt.date(from: "2026-08-14 12:00")!
         precondition(weekly.occurrenceToday(now: friday, calendar: cal) == fmt.date(from: "2026-08-14 15:30"), "REMINDER: weekly should occur on its weekday")
 
+        // Custom every-2-days: anchored Fri 7-31, so it lands on even day
+        // offsets. 8-10 (offset 10) fires; 8-11 (offset 11) doesn't.
+        var every2 = Reminder(anchor: anchor, recurrence: .custom)
+        every2.customMode = .everyNDays
+        every2.customDays = 2
+        let tuesday = fmt.date(from: "2026-08-11 12:00")!
+        precondition(every2.occurrenceToday(now: now, calendar: cal) == fmt.date(from: "2026-08-10 15:30"), "REMINDER: every-2-days should occur on even offsets")
+        precondition(every2.occurrenceToday(now: tuesday, calendar: cal) == nil, "REMINDER: every-2-days should skip odd offsets")
+        precondition(every2.nextFireDate(after: now, calendar: cal) == fmt.date(from: "2026-08-10 15:30"), "REMINDER: every-2-days next fire today")
+        precondition(every2.nextFireDate(after: tuesday, calendar: cal) == fmt.date(from: "2026-08-12 15:30"), "REMINDER: every-2-days next fire skips a day")
+        let intervalTriggers = every2.notificationTriggers(now: now, calendar: cal)
+        precondition(intervalTriggers.count == Reminder.intervalLookahead, "REMINDER: interval should schedule the full lookahead window")
+        precondition(intervalTriggers.allSatisfy { !$0.repeats }, "REMINDER: interval triggers are one-shots")
+
+        // Custom weekdays Mon/Wed/Fri: 8-10 is a Monday, 8-11 a Tuesday.
+        var mwf = Reminder(anchor: anchor, recurrence: .custom)
+        mwf.customMode = .weekdays
+        mwf.customWeekdays = [2, 4, 6]
+        precondition(mwf.occurrenceToday(now: now, calendar: cal) == fmt.date(from: "2026-08-10 15:30"), "REMINDER: MWF should occur on Monday")
+        precondition(mwf.occurrenceToday(now: tuesday, calendar: cal) == nil, "REMINDER: MWF should skip Tuesday")
+        precondition(mwf.nextFireDate(after: tuesday, calendar: cal) == fmt.date(from: "2026-08-12 15:30"), "REMINDER: MWF next fire from Tuesday is Wednesday")
+        let weekdayTriggers = mwf.notificationTriggers(now: now, calendar: cal)
+        precondition(weekdayTriggers.count == 3 && weekdayTriggers.allSatisfy(\.repeats), "REMINDER: one repeating trigger per picked weekday")
+        var noDays = mwf
+        noDays.customWeekdays = []
+        precondition(noDays.nextFireDate(after: now, calendar: cal) == nil, "REMINDER: empty weekday set has nothing to fire")
+
+        // Calendar mirroring: the recurrence rules Google gets.
+        precondition(CalendarService.recurrenceRule(for: pastOnce, calendar: cal) == nil, "REMINDER: once has no RRULE")
+        precondition(CalendarService.recurrenceRule(for: daily, calendar: cal) == "RRULE:FREQ=DAILY", "REMINDER: daily RRULE mismatch")
+        precondition(CalendarService.recurrenceRule(for: weekly, calendar: cal) == "RRULE:FREQ=WEEKLY;BYDAY=FR", "REMINDER: weekly RRULE mismatch")
+        precondition(CalendarService.recurrenceRule(for: every2, calendar: cal) == "RRULE:FREQ=DAILY;INTERVAL=2", "REMINDER: interval RRULE mismatch")
+        precondition(CalendarService.recurrenceRule(for: mwf, calendar: cal) == "RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR", "REMINDER: weekday-set RRULE mismatch")
+
         // Persistence round trip through the same helpers the service uses.
-        let saved = [pastOnce, daily, Reminder(kind: .focusNudge, anchor: anchor, recurrence: .weekly, enabled: false)]
+        let saved = [pastOnce, daily, every2, mwf, Reminder(kind: .focusNudge, anchor: anchor, recurrence: .weekly, enabled: false)]
         let restored = ReminderService.decode(ReminderService.encode(saved))
         precondition(restored == saved, "REMINDER: codable round trip mismatch")
         precondition(ReminderService.decode(nil).isEmpty, "REMINDER: nil data should decode to empty")
+
+        // A blob saved before the custom-recurrence fields existed must still
+        // decode (defaults fill in), so an upgrade never wipes saved reminders.
+        let legacyJSON = """
+        [{"id":"6F9619FF-8B86-D011-B42D-00CF4FC964FF","kind":"task","title":"wash my face","anchor":0,"recurrence":"daily","enabled":true}]
+        """
+        let legacy = ReminderService.decode(legacyJSON.data(using: .utf8))
+        precondition(legacy.count == 1, "REMINDER: legacy blob failed to decode")
+        precondition(legacy[0].title == "wash my face" && legacy[0].customDays == 2 && legacy[0].customWeekdays.isEmpty && legacy[0].calendarEventId == nil, "REMINDER: legacy defaults mismatch")
 
         // Focus-nudge copy pool: non-empty, and clean of em/en dashes per the
         // voice guideline.

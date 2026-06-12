@@ -66,6 +66,100 @@ struct CalendarService {
         ]
     }
 
+    // MARK: - Reminder events
+
+    /// The RFC 5545 recurrence rule matching a reminder's schedule, or nil for
+    /// a one-off (or a weekday set with nothing picked). Pure, selftest-covered.
+    static func recurrenceRule(for reminder: Reminder, calendar: Calendar = .current) -> String? {
+        switch reminder.recurrence {
+        case .once:
+            return nil
+        case .daily:
+            return "RRULE:FREQ=DAILY"
+        case .weekly:
+            return "RRULE:FREQ=WEEKLY;BYDAY=\(byDay(calendar.component(.weekday, from: reminder.anchor)))"
+        case .monthly:
+            let day = min(calendar.component(.day, from: reminder.anchor), Reminder.monthlyDayCap)
+            return "RRULE:FREQ=MONTHLY;BYMONTHDAY=\(day)"
+        case .custom:
+            switch reminder.customMode {
+            case .everyNDays:
+                return "RRULE:FREQ=DAILY;INTERVAL=\(max(1, reminder.customDays))"
+            case .weekdays:
+                guard !reminder.customWeekdays.isEmpty else { return nil }
+                let days = reminder.customWeekdays.sorted().map(byDay).joined(separator: ",")
+                return "RRULE:FREQ=WEEKLY;BYDAY=\(days)"
+            }
+        }
+    }
+
+    /// RFC 5545 weekday code for a Calendar weekday number (1 = Sunday).
+    private static func byDay(_ weekday: Int) -> String {
+        ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][(weekday - 1 + 7) % 7]
+    }
+
+    /// The event JSON for a reminder: a short free ("transparent") slot at the
+    /// fire time with a popup at 0 minutes, so Google surfaces it like a
+    /// reminder instead of blocking the calendar as busy time.
+    static func reminderEventBody(_ reminder: Reminder, start: Date, timeZone: String, calendar: Calendar = .current) -> [String: Any] {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let end = start.addingTimeInterval(15 * 60)
+        var body: [String: Any] = [
+            "summary": eventTitle(forGoal: reminder.displayTitle),
+            "start": ["dateTime": formatter.string(from: start), "timeZone": timeZone],
+            "end": ["dateTime": formatter.string(from: end), "timeZone": timeZone],
+            "transparency": "transparent",
+            "reminders": ["useDefault": false, "overrides": [["method": "popup", "minutes": 0]]],
+            "description": "Reminder created by Loft Hours",
+        ]
+        if let rule = recurrenceRule(for: reminder, calendar: calendar) {
+            body["recurrence"] = [rule]
+        }
+        return body
+    }
+
+    /// Create the calendar event mirroring a reminder. Returns the event id, or
+    /// nil when not connected, nothing left to fire, or Google rejected it.
+    func createReminderEvent(_ reminder: Reminder) async -> String? {
+        guard let start = reminder.nextFireDate() else { return nil }
+        let body = Self.reminderEventBody(reminder, start: start, timeZone: TimeZone.current.identifier)
+        return await postEvent(body)
+    }
+
+    /// Delete an event by id. Best-effort: a 404 (already gone) or any network
+    /// failure is silently ignored.
+    func deleteEvent(id: String) async {
+        guard let token = await auth.accessToken(),
+              let url = eventsURL(suffix: "/" + id) else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "DELETE"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        _ = try? await URLSession.shared.data(for: req)
+    }
+
+    /// POST an event body to the calendar; returns the created event's id.
+    private func postEvent(_ body: [String: Any]) async -> String? {
+        guard let token = await auth.accessToken(),
+              let url = eventsURL(),
+              let payload = try? JSONSerialization.data(withJSONObject: body) else { return nil }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = payload
+        guard let (data, response) = try? await URLSession.shared.data(for: req),
+              let http = response as? HTTPURLResponse,
+              (200..<300).contains(http.statusCode),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return json["id"] as? String
+    }
+
+    private func eventsURL(suffix: String = "") -> URL? {
+        let encodedCalendar = calendarId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? calendarId
+        return URL(string: "https://www.googleapis.com/calendar/v3/calendars/\(encodedCalendar)/events\(suffix)")
+    }
+
     /// Full diagnostic create. Used by the Settings test button.
     func send(title: String, start: Date, durationMin: Int) async -> CalendarSendResult {
         guard let token = await auth.accessToken() else { return .notConnected }

@@ -50,10 +50,17 @@ struct RootView: View {
             if !isDone {
                 gearButton(p)
             }
-
-            footerMark(p)
         }
-        .frame(minWidth: 460, minHeight: 560)
+        // The wordmark gets its own reserved strip instead of floating over the
+        // content. The opaque background matters: scroll content passing the
+        // strip is hidden behind it instead of bleeding through the glyphs.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            footerMark(p)
+                .background(isDone ? p.doneBackground : p.background)
+        }
+        // Floor below which nothing overlaps: the gear clears the intake
+        // header's Review button with room to spare at 660.
+        .frame(minWidth: 660, minHeight: 660)
         .task {
             controller.requestNotificationAuthorization()
             // Re-mirror the saved reminders into the notification center each
@@ -78,29 +85,41 @@ struct RootView: View {
                 .environmentObject(theme)
                 .environmentObject(reminderService)
         }
+        // Tapping a "Your day" rail row opens that one reminder's editor
+        // directly, skipping the All reminders list.
+        .sheet(item: $controller.reminderToEdit) { reminder in
+            ReminderEditor(
+                existing: reminder,
+                onSave: { updated in
+                    reminderService.update(updated)
+                    controller.reminderToEdit = nil
+                },
+                onCancel: { controller.reminderToEdit = nil }
+            )
+            .environmentObject(theme)
+        }
     }
 
-    /// The small "Loft Hours" wordmark pinned to the bottom-center of every
-    /// page, in the Gaegu logo face.
+    /// The small "Loft Hours" wordmark in its reserved strip at the bottom of
+    /// every page, in the Gaegu logo face.
     private func footerMark(_ p: Palette) -> some View {
-        VStack {
-            Spacer()
-            Group {
-                if let mark = AppImages.wordmark {
-                    Image(nsImage: mark)
-                        .resizable()
-                        .renderingMode(.template)
-                        .scaledToFit()
-                        .frame(height: 36)
-                        .foregroundStyle(p.muted)
-                } else {
-                    Text("Loft Hours")
-                        .font(AppFont.footerMark)
-                        .foregroundStyle(p.muted)
-                }
+        Group {
+            if let mark = AppImages.wordmark {
+                Image(nsImage: mark)
+                    .resizable()
+                    .renderingMode(.template)
+                    .scaledToFit()
+                    .frame(height: 36)
+                    .foregroundStyle(p.muted)
+            } else {
+                Text("Loft Hours")
+                    .font(AppFont.footerMark)
+                    .foregroundStyle(p.muted)
             }
-            .padding(.bottom, 12)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 4)
+        .padding(.bottom, 12)
         .allowsHitTesting(false)
     }
 

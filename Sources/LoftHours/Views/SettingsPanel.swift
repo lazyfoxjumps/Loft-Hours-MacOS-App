@@ -51,13 +51,9 @@ struct SettingsPanel: View {
                     .font(AppFont.heading)
                     .foregroundStyle(p.foreground)
                 Spacer()
-                Button {
+                SheetCloseButton(palette: p) {
                     dismiss()
-                } label: {
-                    Image(systemName: "xmark")
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(p.muted)
             }
 
             ThemedSegmented(

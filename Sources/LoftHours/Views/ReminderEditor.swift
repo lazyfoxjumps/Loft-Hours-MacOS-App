@@ -52,6 +52,9 @@ struct ReminderEditor: View {
     @State private var title: String
     @State private var recurrence: Reminder.Recurrence
     @State private var anchor: Date
+    @State private var customMode: Reminder.CustomMode
+    @State private var customWeekdays: Set<Int>
+    @State private var customDays: Int
 
     init(existing: Reminder? = nil, onSave: @escaping (Reminder) -> Void, onCancel: @escaping () -> Void) {
         self.existing = existing
@@ -60,6 +63,9 @@ struct ReminderEditor: View {
         _kind = State(initialValue: existing?.kind ?? .task)
         _title = State(initialValue: existing?.title ?? "")
         _recurrence = State(initialValue: existing?.recurrence ?? .once)
+        _customMode = State(initialValue: existing?.customMode ?? .weekdays)
+        _customWeekdays = State(initialValue: existing?.customWeekdays ?? [])
+        _customDays = State(initialValue: existing?.customDays ?? 2)
         // New reminders default to the top of the next hour, a likelier intent
         // than "this exact second".
         let defaultAnchor = Calendar.current.nextDate(
@@ -71,7 +77,9 @@ struct ReminderEditor: View {
     }
 
     private var canSave: Bool {
-        kind == .focusNudge || !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let titled = kind == .focusNudge || !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let scheduled = !(recurrence == .custom && customMode == .weekdays && customWeekdays.isEmpty)
+        return titled && scheduled
     }
 
     private var draft: Reminder {
@@ -80,7 +88,20 @@ struct ReminderEditor: View {
         r.title = kind == .task ? title.trimmingCharacters(in: .whitespacesAndNewlines) : ""
         r.recurrence = recurrence
         r.anchor = anchor
+        r.customMode = customMode
+        r.customWeekdays = customWeekdays
+        r.customDays = customDays
         return r
+    }
+
+    /// The date picker only needs a calendar date when the date itself matters:
+    /// a one-off's exact day, or the count-from day of an every-N-days schedule.
+    private var pickerShowsDate: Bool {
+        switch recurrence {
+        case .once, .weekly, .monthly: return true
+        case .daily: return false
+        case .custom: return customMode == .everyNDays
+        }
     }
 
     var body: some View {
@@ -113,6 +134,27 @@ struct ReminderEditor: View {
                 palette: p
             )
 
+            if recurrence == .custom {
+                ThemedSegmented(
+                    options: [(.weekdays, "Days of the week"), (.everyNDays, "Every few days")],
+                    selection: $customMode,
+                    palette: p
+                )
+
+                if customMode == .weekdays {
+                    weekdayChips(p)
+                } else {
+                    HStack(spacing: 8) {
+                        Text("Every \(customDays) days")
+                            .font(AppFont.callout)
+                            .monospacedDigit()
+                            .foregroundStyle(p.foreground)
+                        Stepper("", value: $customDays, in: 2...90)
+                            .labelsHidden()
+                    }
+                }
+            }
+
             HStack(alignment: .center, spacing: 8) {
                 Text("When")
                     .font(AppFont.callout)
@@ -120,7 +162,7 @@ struct ReminderEditor: View {
                     // Nunito's baseline sits a touch high next to the AppKit
                     // field; nudge so label and digits read as one line.
                     .baselineOffset(-1)
-                BareStepperDatePicker(date: $anchor, showsDate: recurrence != .daily)
+                BareStepperDatePicker(date: $anchor, showsDate: pickerShowsDate)
                     .fixedSize()
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -175,8 +217,38 @@ struct ReminderEditor: View {
             }
         }
         .padding(16)
-        .frame(width: 340)
+        // A touch wider than the old 340 so five recurrence segments breathe.
+        .frame(width: 380)
         .background(p.background)
+    }
+
+    /// One toggle chip per weekday, in the user's first-day-of-week order, for
+    /// the custom "days of the week" schedule.
+    private func weekdayChips(_ p: Palette) -> some View {
+        let cal = Calendar.current
+        let order = (0..<7).map { (cal.firstWeekday - 1 + $0) % 7 + 1 }
+        return HStack(spacing: 6) {
+            ForEach(order, id: \.self) { weekday in
+                let on = customWeekdays.contains(weekday)
+                Button {
+                    if on { customWeekdays.remove(weekday) } else { customWeekdays.insert(weekday) }
+                } label: {
+                    Text(cal.veryShortWeekdaySymbols[weekday - 1])
+                        .font(AppFont.nunito(12, on ? .semibold : .regular))
+                        .foregroundStyle(on ? p.background : p.foreground)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Circle()
+                                .fill(on ? p.accent : p.surface)
+                                .overlay(Circle().stroke(p.surfaceBorder, lineWidth: on ? 0 : 1))
+                        )
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(cal.weekdaySymbols[weekday - 1])
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     /// Caption under the picker spelling out what the recurrence actually does,
@@ -198,6 +270,21 @@ struct ReminderEditor: View {
                 return "Day \(day) doesn't exist in every month, so this fires on the 28th instead, every month without fail."
             }
             return "Repeats on day \(day) of every month."
+        case .custom:
+            switch customMode {
+            case .weekdays:
+                if customWeekdays.isEmpty {
+                    return "Pick at least one day above."
+                }
+                if customWeekdays.count == 7 {
+                    return "Repeats every day at this time."
+                }
+                let fmt = DateFormatter()
+                let names = customWeekdays.sorted().map { fmt.shortWeekdaySymbols[$0 - 1] }
+                return "Repeats every \(names.joined(separator: ", ")) at this time."
+            case .everyNDays:
+                return "Repeats every \(customDays) days at this time, counting from the date above."
+            }
         }
     }
 }

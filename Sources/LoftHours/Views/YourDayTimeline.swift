@@ -105,12 +105,11 @@ struct YourDayTimeline: View {
         }
     }
 
-    /// One reminder occurrence. The whole row is a button that jumps straight
-    /// to this reminder's edit form in the All reminders sheet.
+    /// One reminder occurrence. The whole row is a button that opens this
+    /// reminder's editor directly in a popup, no list in between.
     private func row(_ entry: Entry, past: Bool, p: Palette) -> some View {
         Button {
             controller.reminderToEdit = entry.reminder
-            controller.showReminders = true
         } label: {
             HStack(alignment: .center, spacing: 10) {
                 Text(entry.time, style: .time)
