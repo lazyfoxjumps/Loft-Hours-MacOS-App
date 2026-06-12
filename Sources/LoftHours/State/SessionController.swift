@@ -56,6 +56,14 @@ final class SessionController: ObservableObject {
     /// Deep-link for the reminders sheet: when set, it opens straight into this
     /// reminder's edit form (set by tapping a row on the home rail).
     @Published var reminderToEdit: Reminder? = nil
+    /// Whether the Routines management sheet is shown.
+    @Published var showRoutines: Bool = false
+    /// When set, this routine's edit form opens directly in a popup (set by
+    /// tapping a routine row on the home rail).
+    @Published var routineToEdit: Routine? = nil
+    /// Set by the home screen's contextual start pill. Nothing consumes it yet;
+    /// the routine runner picks it up in the next phase.
+    @Published var routineToStart: Routine? = nil
 
     /// Apps closed during setup so the wrap-up can offer to reopen them.
     @Published private(set) var closedApps: [String] = []

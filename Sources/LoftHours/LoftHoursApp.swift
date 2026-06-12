@@ -6,6 +6,8 @@ struct LoftHoursApp: App {
     @StateObject private var controller: SessionController
     @StateObject private var googleAuth: GoogleAuth
     @StateObject private var reminderService: ReminderService
+    @StateObject private var routineService: RoutineService
+    @StateObject private var routineTracker = RoutineTracker()
 
     init() {
         let cfg = ConfigStore()
@@ -16,6 +18,9 @@ struct LoftHoursApp: App {
         // Reminders mirror into Google Calendar when sync is on, so the
         // service needs the same auth + config the session path uses.
         _reminderService = StateObject(wrappedValue: ReminderService(auth: auth, config: cfg))
+        // Routines mirror to Google Calendar too (as Free slots), so the same
+        // auth + config go in.
+        _routineService = StateObject(wrappedValue: RoutineService(auth: auth, config: cfg))
         // Claim the notification-center delegate so reminder taps route back
         // into the app and reminders still banner while we're frontmost.
         NotificationRouter.shared.install()
@@ -29,6 +34,8 @@ struct LoftHoursApp: App {
                 .environmentObject(config)
                 .environmentObject(googleAuth)
                 .environmentObject(reminderService)
+                .environmentObject(routineService)
+                .environmentObject(routineTracker)
         }
         .windowResizability(.contentMinSize)
 

@@ -9,6 +9,8 @@ struct RootView: View {
     @EnvironmentObject private var config: ConfigStore
     @EnvironmentObject private var googleAuth: GoogleAuth
     @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var routineService: RoutineService
+    @EnvironmentObject private var routineTracker: RoutineTracker
 
     private var isDone: Bool {
         if case .done = controller.phase { return true }
@@ -67,6 +69,9 @@ struct RootView: View {
             // launch: idempotent (stable identifiers) and it re-rolls the
             // focus-nudge copy so repeats don't go stale.
             reminderService.rescheduleAll()
+            // Same idempotent re-mirror for routine nudges, and it refills the
+            // every-N-days rolling window of one-shot triggers.
+            routineService.rescheduleAll()
         }
         .animation(.easeInOut(duration: 0.4), value: theme.selected)
         .sheet(isPresented: $controller.showSettings) {
@@ -95,6 +100,24 @@ struct RootView: View {
                     controller.reminderToEdit = nil
                 },
                 onCancel: { controller.reminderToEdit = nil }
+            )
+            .environmentObject(theme)
+        }
+        .sheet(isPresented: $controller.showRoutines) {
+            RoutinesSheet()
+                .environmentObject(controller)
+                .environmentObject(theme)
+                .environmentObject(routineService)
+        }
+        // Same direct-edit shortcut for routine rows on the rail.
+        .sheet(item: $controller.routineToEdit) { routine in
+            RoutineEditor(
+                existing: routine,
+                onSave: { updated in
+                    routineService.update(updated)
+                    controller.routineToEdit = nil
+                },
+                onCancel: { controller.routineToEdit = nil }
             )
             .environmentObject(theme)
         }

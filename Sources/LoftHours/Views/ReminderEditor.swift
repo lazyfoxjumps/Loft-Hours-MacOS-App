@@ -5,8 +5,8 @@ import AppKit
 /// draw its own box around it. The native bezel hugs the digits with zero side
 /// padding and exposes no knob for it; SwiftUI padding only grows the outside
 /// of the control. Bezel off + our own background = real left/right breathing
-/// room without making the field any taller.
-private struct BareStepperDatePicker: NSViewRepresentable {
+/// room without making the field any taller. Shared with RoutineEditor.
+struct BareStepperDatePicker: NSViewRepresentable {
     @Binding var date: Date
     var showsDate: Bool
 
@@ -142,7 +142,7 @@ struct ReminderEditor: View {
                 )
 
                 if customMode == .weekdays {
-                    weekdayChips(p)
+                    WeekdayChips(selection: $customWeekdays, palette: p)
                 } else {
                     HStack(spacing: 8) {
                         Text("Every \(customDays) days")
@@ -222,25 +222,43 @@ struct ReminderEditor: View {
         .background(p.background)
     }
 
-    /// One toggle chip per weekday, in the user's first-day-of-week order, for
-    /// the custom "days of the week" schedule.
-    private func weekdayChips(_ p: Palette) -> some View {
+    /// Caption under the picker spelling out what the recurrence actually does,
+    /// including the monthly 29-31 clamp flag.
+    private var scheduleNote: String? {
+        RecurrenceCopy.note(
+            recurrence: recurrence,
+            customMode: customMode,
+            customWeekdays: customWeekdays,
+            customDays: customDays,
+            anchor: anchor
+        )
+    }
+}
+
+/// One toggle chip per weekday, in the user's first-day-of-week order, for the
+/// custom "days of the week" schedule. Shared by the reminder and routine
+/// editors.
+struct WeekdayChips: View {
+    @Binding var selection: Set<Int>
+    let palette: Palette
+
+    var body: some View {
         let cal = Calendar.current
         let order = (0..<7).map { (cal.firstWeekday - 1 + $0) % 7 + 1 }
-        return HStack(spacing: 6) {
+        HStack(spacing: 6) {
             ForEach(order, id: \.self) { weekday in
-                let on = customWeekdays.contains(weekday)
+                let on = selection.contains(weekday)
                 Button {
-                    if on { customWeekdays.remove(weekday) } else { customWeekdays.insert(weekday) }
+                    if on { selection.remove(weekday) } else { selection.insert(weekday) }
                 } label: {
                     Text(cal.veryShortWeekdaySymbols[weekday - 1])
                         .font(AppFont.nunito(12, on ? .semibold : .regular))
-                        .foregroundStyle(on ? p.background : p.foreground)
+                        .foregroundStyle(on ? palette.background : palette.foreground)
                         .frame(width: 32, height: 32)
                         .background(
                             Circle()
-                                .fill(on ? p.accent : p.surface)
-                                .overlay(Circle().stroke(p.surfaceBorder, lineWidth: on ? 0 : 1))
+                                .fill(on ? palette.accent : palette.surface)
+                                .overlay(Circle().stroke(palette.surfaceBorder, lineWidth: on ? 0 : 1))
                         )
                         .contentShape(Circle())
                 }
@@ -250,11 +268,19 @@ struct ReminderEditor: View {
         }
         .frame(maxWidth: .infinity)
     }
+}
 
-    /// Caption under the picker spelling out what the recurrence actually does,
-    /// including the monthly 29-31 clamp flag.
-    private var scheduleNote: String? {
-        let cal = Calendar.current
+/// The recurrence caption both editors show under their date picker, spelling
+/// out what the schedule actually does, including the monthly 29-31 clamp flag.
+enum RecurrenceCopy {
+    static func note(
+        recurrence: Reminder.Recurrence,
+        customMode: Reminder.CustomMode,
+        customWeekdays: Set<Int>,
+        customDays: Int,
+        anchor: Date,
+        calendar: Calendar = .current
+    ) -> String? {
         switch recurrence {
         case .once:
             return nil
@@ -262,10 +288,10 @@ struct ReminderEditor: View {
             return "Repeats every day at this time."
         case .weekly:
             let fmt = DateFormatter()
-            let name = fmt.weekdaySymbols[cal.component(.weekday, from: anchor) - 1]
+            let name = fmt.weekdaySymbols[calendar.component(.weekday, from: anchor) - 1]
             return "Repeats every \(name) at this time."
         case .monthly:
-            let day = cal.component(.day, from: anchor)
+            let day = calendar.component(.day, from: anchor)
             if day > Reminder.monthlyDayCap {
                 return "Day \(day) doesn't exist in every month, so this fires on the 28th instead, every month without fail."
             }
