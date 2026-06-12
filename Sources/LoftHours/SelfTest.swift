@@ -513,6 +513,47 @@ enum SelfTest {
         print("ROUTINE: OK")
     }
 
+    /// Headless check of the Review > Logs calendar math: the activity-count to
+    /// intensity-opacity bucketing (0 = no circle, then four steps capping at
+    /// 4+), and the merge of session-log day counts with routine activity counts
+    /// into one per-day total the grid draws from.
+    static func runCalendarGridTest() {
+        precondition(LogCalendarView.intensityOpacity(for: 0) == 0, "CALGRID: 0 activity should have no circle")
+        precondition(LogCalendarView.intensityOpacity(for: 1) == 0.20, "CALGRID: step 1 mismatch")
+        precondition(LogCalendarView.intensityOpacity(for: 2) == 0.40, "CALGRID: step 2 mismatch")
+        precondition(LogCalendarView.intensityOpacity(for: 3) == 0.65, "CALGRID: step 3 mismatch")
+        precondition(LogCalendarView.intensityOpacity(for: 4) == 0.90, "CALGRID: step 4 mismatch")
+        precondition(LogCalendarView.intensityOpacity(for: 12) == 0.90, "CALGRID: 4+ should cap at the top step")
+
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(identifier: "UTC")!
+        fmt.dateFormat = "yyyy-MM-dd HH:mm"
+
+        let d1 = cal.startOfDay(for: fmt.date(from: "2026-06-10 09:00")!)
+        let d2 = cal.startOfDay(for: fmt.date(from: "2026-06-11 09:00")!)
+        let d3 = cal.startOfDay(for: fmt.date(from: "2026-06-12 09:00")!)
+
+        func log(_ stamp: String) -> ParsedLog {
+            ParsedLog(url: URL(fileURLWithPath: "/tmp/\(stamp.replacingOccurrences(of: " ", with: "_")).md"),
+                      startedAt: fmt.date(from: stamp)!, endedAt: nil, durationMin: 25, blocks: 1,
+                      goal: "g", delivered: "", energyStart: .medium, energyEnd: .medium,
+                      nextStep: "", reflection: "")
+        }
+        // Two sessions on d1, one on d2, none on d3.
+        let logs = [log("2026-06-10 09:00"), log("2026-06-10 14:00"), log("2026-06-11 09:00")]
+        // Routines: one completed on d1, two on d3.
+        let routineCounts: [Date: Int] = [d1: 1, d3: 2]
+
+        let counts = LogCalendarView.dayCounts(logs: logs, routineCounts: routineCounts, calendar: cal)
+        precondition(counts[d1] == 3, "CALGRID: d1 should sum 2 sessions + 1 routine, got \(counts[d1] ?? -1)")
+        precondition(counts[d2] == 1, "CALGRID: d2 should be 1 session, got \(counts[d2] ?? -1)")
+        precondition(counts[d3] == 2, "CALGRID: d3 should be 2 routines, got \(counts[d3] ?? -1)")
+        print("CALGRID: OK")
+    }
+
     /// Headless check of the crash-safe orphan sweep: drop an active-session.json
     /// in a temp log dir, sweep it, and verify it moved into abandoned/.
     static func runOrphanSweepTest() {

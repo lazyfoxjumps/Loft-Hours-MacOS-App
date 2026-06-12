@@ -102,6 +102,7 @@ struct RootView: View {
             ReviewView()
                 .environmentObject(controller)
                 .environmentObject(theme)
+                .environmentObject(routineTracker)
         }
         .sheet(isPresented: $controller.showReminders) {
             RemindersSheet()

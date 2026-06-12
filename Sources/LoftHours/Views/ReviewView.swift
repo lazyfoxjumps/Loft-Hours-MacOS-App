@@ -9,6 +9,7 @@ import AppKit
 struct ReviewView: View {
     @EnvironmentObject private var controller: SessionController
     @EnvironmentObject private var theme: ThemeStore
+    @EnvironmentObject private var routineTracker: RoutineTracker
 
     /// Which pane the sheet shows. Week/Month map onto the controller's
     /// `reviewScope` (which the menu bar also sets); Logs is sheet-local.
@@ -22,8 +23,14 @@ struct ReviewView: View {
     @State private var rollup: Rollup?
     @State private var reportURL: URL?
     @State private var logs: [ParsedLog] = []
-    /// The log open in the detail card; nil shows the list.
+    /// The log open in the detail card; nil shows the calendar.
     @State private var selectedLog: ParsedLog?
+
+    // Logs-pane calendar state.
+    @State private var calendarMonth: Date = Date()
+    @State private var selectedDay: Date = Calendar.current.startOfDay(for: Date())
+    @State private var dayCounts: [Date: Int] = [:]
+    private let calendar = Calendar.current
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -57,7 +64,7 @@ struct ReviewView: View {
                     if let log = selectedLog {
                         logDetail(log, p)
                     } else {
-                        logList(p)
+                        calendarPane(p)
                     }
                 }
             }
@@ -66,7 +73,7 @@ struct ReviewView: View {
             footer(p)
         }
         .padding(20)
-        .frame(width: 420, height: 560)
+        .frame(width: 440, height: 620)
         .background(p.background)
         .onAppear {
             pane = controller.reviewScope == .month ? .month : .week
@@ -90,6 +97,11 @@ struct ReviewView: View {
             reportURL = controller.saveRollupReport(r)
         case .logs:
             logs = controller.allLogs()
+            dayCounts = LogCalendarView.dayCounts(
+                logs: logs,
+                routineCounts: routineTracker.activityCounts(),
+                calendar: calendar
+            )
         }
     }
 
@@ -159,42 +171,81 @@ struct ReviewView: View {
         .padding(.top, 8)
     }
 
-    // MARK: - Logs pane
+    // MARK: - Logs pane (calendar + selected day)
 
-    /// Logs grouped by calendar month, newest group (and newest log) first.
-    private var groupedLogs: [(title: String, logs: [ParsedLog])] {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM yyyy"
-        var order: [String] = []
-        var groups: [String: [ParsedLog]] = [:]
-        for log in logs {
-            let key = fmt.string(from: log.startedAt)
-            if groups[key] == nil { order.append(key) }
-            groups[key, default: []].append(log)
+    private func calendarPane(_ p: Palette) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            LogCalendarView(
+                month: $calendarMonth,
+                selected: $selectedDay,
+                counts: dayCounts,
+                palette: p,
+                calendar: calendar
+            )
+            selectedDaySection(p)
         }
-        return order.map { ($0, groups[$0] ?? []) }
+        .padding(.top, 2)
     }
 
-    private func logList(_ p: Palette) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if logs.isEmpty {
-                Text("No sessions logged yet. Finish a focus session and it'll show up here.")
+    private func selectedDaySection(_ p: Palette) -> some View {
+        let dayLogs = logs.filter { calendar.isDate($0.startedAt, inSameDayAs: selectedDay) }
+        let routineEntries = routineTracker.entries(on: selectedDay)
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(selectedDayTitle)
+                .font(AppFont.caption)
+                .foregroundStyle(p.muted)
+            if dayLogs.isEmpty && routineEntries.isEmpty {
+                Text("Nothing logged this day.")
                     .font(AppFont.callout)
                     .foregroundStyle(p.muted)
-                    .padding(.top, 12)
+                    .padding(.top, 4)
             } else {
-                ForEach(groupedLogs, id: \.title) { group in
-                    Text(group.title)
-                        .font(AppFont.caption)
-                        .foregroundStyle(p.muted)
-                        .padding(.top, 8)
-                    ForEach(group.logs, id: \.url) { log in
-                        logRow(log, p)
-                    }
+                ForEach(dayLogs, id: \.url) { log in
+                    logRow(log, p)
+                }
+                ForEach(routineEntries, id: \.routineId) { entry in
+                    routineRow(entry, p)
                 }
             }
         }
-        .padding(.top, 2)
+    }
+
+    private var selectedDayTitle: String {
+        let fmt = DateFormatter()
+        fmt.calendar = calendar
+        fmt.locale = .current
+        fmt.dateFormat = "EEEE, d MMM yyyy"
+        return fmt.string(from: selectedDay)
+    }
+
+    /// A routine's status for the selected day. Not tappable (routines have no
+    /// per-session detail card); a "done" capsule marks a finished run.
+    private func routineRow(_ entry: RoutineDayEntry, _ p: Palette) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.displayName)
+                    .font(AppFont.callout)
+                    .foregroundStyle(p.foreground)
+                Text(entry.progressText)
+                    .font(AppFont.caption)
+                    .foregroundStyle(p.muted)
+            }
+            Spacer()
+            if entry.finishedAt != nil {
+                Text("done")
+                    .font(AppFont.caption)
+                    .foregroundStyle(p.background)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(p.accent))
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(p.surface)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.surfaceBorder, lineWidth: 1))
+        )
     }
 
     private func logRow(_ log: ParsedLog, _ p: Palette) -> some View {
