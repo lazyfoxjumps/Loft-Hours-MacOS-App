@@ -64,18 +64,16 @@ struct EmojiField: NSViewRepresentable {
     }
 }
 
-/// An NSTextField that opens the system character palette as soon as it gains
-/// focus and hides the blinking caret while it's the field being edited. The
-/// caret is suppressed on the shared field editor only while this field holds
-/// focus, then restored on end-editing so other text fields keep their cursor.
+/// An NSTextField that behaves like a button: every click (re)opens the system
+/// character palette, the hover cursor is a pointing hand rather than an I-beam,
+/// and the blinking caret is suppressed while it holds focus. The caret is
+/// cleared on the shared field editor only while this field is edited, then
+/// restored on end-editing so other text fields keep their cursor.
 final class EmojiNSTextField: NSTextField {
     override func becomeFirstResponder() -> Bool {
         let ok = super.becomeFirstResponder()
         if ok {
             (currentEditor() as? NSTextView)?.insertionPointColor = .clear
-            DispatchQueue.main.async {
-                NSApp.orderFrontCharacterPalette(self)
-            }
         }
         return ok
     }
@@ -84,5 +82,20 @@ final class EmojiNSTextField: NSTextField {
         // Restore the shared field editor's caret for the next text field.
         (notification.object as? NSTextView)?.insertionPointColor = .textColor
         super.textDidEndEditing(notification)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        // Take focus if we don't have it, then open the palette on EVERY click
+        // so changing your mind doesn't take several tries. Deliberately skip
+        // super so the click doesn't place a text caret.
+        if currentEditor() == nil {
+            window?.makeFirstResponder(self)
+        }
+        NSApp.orderFrontCharacterPalette(self)
+    }
+
+    override func resetCursorRects() {
+        // It's a picker button, not a text box: show the pointing hand on hover.
+        addCursorRect(bounds, cursor: .pointingHand)
     }
 }

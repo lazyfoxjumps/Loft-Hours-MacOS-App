@@ -21,6 +21,14 @@ struct RoutineEditor: View {
     @State private var customDays: Int
     @State private var tasks: [RoutineTask]
     @State private var notify: Bool
+    /// A transient extra circle for an emoji picked from the system palette that
+    /// isn't one of the curated quick-picks. Lives only for this routine: the
+    /// "+" button stays a "+", and this never joins the curated row for new
+    /// routines.
+    @State private var customEmoji: String
+    /// Capture slot the title's "+" picker writes into; lifted into
+    /// customEmoji + selection, then cleared so the "+" stays a "+".
+    @State private var titlePickerBuffer = ""
 
     /// A quick-pick row of routine-flavored emoji so most people never have to
     /// open the system picker. Tapping the selected one clears it.
@@ -39,6 +47,10 @@ struct RoutineEditor: View {
         _customDays = State(initialValue: existing?.customDays ?? 2)
         _tasks = State(initialValue: existing?.tasks ?? [])
         _notify = State(initialValue: existing?.notify ?? true)
+        // If an existing routine's emoji isn't a curated quick-pick, surface it
+        // as the transient custom circle (selected) so it stays editable.
+        let savedEmoji = existing?.emoji ?? ""
+        _customEmoji = State(initialValue: (!savedEmoji.isEmpty && !Self.curatedEmoji.contains(savedEmoji)) ? savedEmoji : "")
         // New routines default to the top of the next hour, same as reminders.
         let defaultAnchor = Calendar.current.nextDate(
             after: Date(),
@@ -198,9 +210,9 @@ struct RoutineEditor: View {
         .background(p.background)
     }
 
-    /// A circular emoji picker button: a "+" while empty, the chosen emoji once
-    /// set. Tapping it opens the macOS emoji palette (see EmojiField); it never
-    /// accepts typed text and shows no caret.
+    /// A circular emoji picker button used for TASK rows: a "+" while empty, the
+    /// chosen emoji once set. Tapping it opens the macOS emoji palette (see
+    /// EmojiField); it never accepts typed text and shows no caret.
     private func emojiCircle(_ emoji: Binding<String>, p: Palette) -> some View {
         ZStack {
             Circle()
@@ -216,30 +228,65 @@ struct RoutineEditor: View {
         .frame(width: 26, height: 26)
     }
 
-    /// The optional emoji: the circular picker plus the curated quick-pick row.
+    /// The routine title's emoji row: a "+" picker that always stays a "+", then
+    /// a transient circle for a freely-picked emoji (if any), then the curated
+    /// quick-picks. Selecting any circle highlights it; the "+" only opens the
+    /// system palette and never becomes the emoji itself.
     private func emojiRow(_ p: Palette) -> some View {
         HStack(spacing: 6) {
-            emojiCircle($emoji, p: p)
-                .help("Tap to pick an emoji shown next to the routine's name. Optional.")
+            titlePlusPicker(p)
+                .help("Pick any emoji from the system palette.")
+
+            if !customEmoji.isEmpty {
+                selectableEmoji(customEmoji, p: p)
+            }
 
             ForEach(Self.curatedEmoji, id: \.self) { option in
-                let on = emoji == option
-                Button {
-                    emoji = on ? "" : option
-                } label: {
-                    Text(option)
-                        .font(.system(size: 14))
-                        .frame(width: 26, height: 26)
-                        .background(
-                            Circle()
-                                .fill(on ? p.accent.opacity(0.25) : p.surface)
-                                .overlay(Circle().stroke(on ? p.accent : p.surfaceBorder, lineWidth: 1))
-                        )
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
+                selectableEmoji(option, p: p)
             }
         }
+    }
+
+    /// The always-"+" title picker. The hidden EmojiField captures the palette's
+    /// pick into a buffer; we lift it into the transient custom circle and select
+    /// it, then clear the buffer so the "+" never turns into the emoji.
+    private func titlePlusPicker(_ p: Palette) -> some View {
+        ZStack {
+            Circle()
+                .fill(p.surface)
+                .overlay(Circle().stroke(p.surfaceBorder, lineWidth: 1))
+            Image(systemName: "plus")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(p.muted)
+            EmojiField(emoji: $titlePickerBuffer)
+        }
+        .frame(width: 26, height: 26)
+        .onChange(of: titlePickerBuffer) { _, picked in
+            guard !picked.isEmpty else { return }
+            customEmoji = picked
+            emoji = picked
+            titlePickerBuffer = ""
+        }
+    }
+
+    /// A selectable emoji circle (curated or the transient custom one): darker
+    /// fill + accent ring when it's the chosen emoji. Tap again to clear.
+    private func selectableEmoji(_ value: String, p: Palette) -> some View {
+        let on = emoji == value
+        return Button {
+            emoji = on ? "" : value
+        } label: {
+            Text(value)
+                .font(.system(size: 14))
+                .frame(width: 26, height: 26)
+                .background(
+                    Circle()
+                        .fill(on ? p.accent.opacity(0.25) : p.surface)
+                        .overlay(Circle().stroke(on ? p.accent : p.surfaceBorder, lineWidth: 1))
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// The repeating checklist: one editable row per task (emoji + title +
