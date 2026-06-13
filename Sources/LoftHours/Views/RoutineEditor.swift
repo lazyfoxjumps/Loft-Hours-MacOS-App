@@ -24,7 +24,7 @@ struct RoutineEditor: View {
 
     /// A quick-pick row of routine-flavored emoji so most people never have to
     /// open the system picker. Tapping the selected one clears it.
-    private static let curatedEmoji = ["☀️", "🌙", "🧘", "🏃", "🛏️", "☕️", "📚", "🧹"]
+    private static let curatedEmoji = ["☀️", "🌙", "🧘", "🏃", "🛏️", "☕️", "📚", "🧹", "💊"]
 
     init(existing: Routine? = nil, onSave: @escaping (Routine) -> Void, onCancel: @escaping () -> Void) {
         self.existing = existing
@@ -198,15 +198,29 @@ struct RoutineEditor: View {
         .background(p.background)
     }
 
-    /// The optional emoji: a small free field plus the curated quick-pick row.
+    /// A circular emoji picker button: a "+" while empty, the chosen emoji once
+    /// set. Tapping it opens the macOS emoji palette (see EmojiField); it never
+    /// accepts typed text and shows no caret.
+    private func emojiCircle(_ emoji: Binding<String>, p: Palette) -> some View {
+        ZStack {
+            Circle()
+                .fill(p.surface)
+                .overlay(Circle().stroke(p.surfaceBorder, lineWidth: 1))
+            if emoji.wrappedValue.isEmpty {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(p.muted)
+            }
+            EmojiField(emoji: emoji)
+        }
+        .frame(width: 26, height: 26)
+    }
+
+    /// The optional emoji: the circular picker plus the curated quick-pick row.
     private func emojiRow(_ p: Palette) -> some View {
         HStack(spacing: 6) {
-            TextField("☀️", text: $emoji)
-                .textFieldStyle(.roundedBorder)
-                .font(AppFont.body)
-                .frame(width: 44)
-                .multilineTextAlignment(.center)
-                .help("An emoji shown next to the routine's name. Optional.")
+            emojiCircle($emoji, p: p)
+                .help("Tap to pick an emoji shown next to the routine's name. Optional.")
 
             ForEach(Self.curatedEmoji, id: \.self) { option in
                 let on = emoji == option
@@ -236,11 +250,8 @@ struct RoutineEditor: View {
         let rows = VStack(alignment: .leading, spacing: 6) {
             ForEach($tasks) { $task in
                 HStack(spacing: 6) {
-                    TextField("☀️", text: $task.emoji)
-                        .textFieldStyle(.roundedBorder)
-                        .font(AppFont.body)
-                        .frame(width: 40)
-                        .multilineTextAlignment(.center)
+                    emojiCircle($task.emoji, p: p)
+                        .help("Tap to pick an emoji for this task. Optional.")
                     TextField("Make the bed...", text: $task.title)
                         .textFieldStyle(.roundedBorder)
                         .font(AppFont.body)

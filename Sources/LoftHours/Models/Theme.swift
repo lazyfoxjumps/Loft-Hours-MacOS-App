@@ -19,7 +19,6 @@ struct Palette: Equatable {
     let muted: Color
     let surface: Color
     let surfaceBorder: Color
-    let doneBackground: Color
 
     let isLight: Bool
 
@@ -46,13 +45,11 @@ struct Palette: Equatable {
             muted = Color(hex: "2a1f15").opacity(0.55)
             surface = Color(hex: "281e14").opacity(0.06)
             surfaceBorder = Color(hex: "281e14").opacity(0.14)
-            doneBackground = Color(hex: "231a14")
         } else {
             foreground = Color(hex: "e2e8f0")
             muted = Color(hex: "94a3b8")
             surface = Color.white.opacity(0.06)
             surfaceBorder = Color.white.opacity(0.12)
-            doneBackground = Color(hex: "0a0a0a")
         }
     }
 

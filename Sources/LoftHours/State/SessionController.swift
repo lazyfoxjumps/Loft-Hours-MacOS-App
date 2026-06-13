@@ -370,8 +370,9 @@ final class SessionController: ObservableObject {
 
     func rewind() {
         guard phase == .running, !isStopwatch else { return }
-        remaining += rewindSeconds
-        if remaining > effectiveTotal { effectiveTotal = remaining }
+        // Rewind can refill time but never past the block's originally selected
+        // length, so a 25-min timer can't be wound up to 40.
+        remaining = min(remaining + rewindSeconds, blockTotal)
         if !isPaused { endDate = Date().addingTimeInterval(remaining) }
     }
 

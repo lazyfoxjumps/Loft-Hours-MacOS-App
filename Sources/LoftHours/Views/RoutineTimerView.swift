@@ -18,16 +18,20 @@ struct RoutineTimerView: View {
         let routine = runner.active
 
         GeometryReader { geo in
-            // The ring is smaller than the focus timer's so the checklist has
-            // room; still clamped against tiny and huge windows.
-            let ring = min(max(min(geo.size.width, geo.size.height) * 0.42, 170), 360)
+            // The ring no longer shares vertical space with the checklist (the
+            // card sits beside it now), so it can sit a touch larger; still
+            // clamped against tiny and huge windows.
+            let ring = min(max(min(geo.size.width, geo.size.height) * 0.44, 170), 360)
             let stroke = max(7.0, ring * 0.05)
             let timeFont = ring * 0.24
             let nameFont = max(12.0, min(ring * 0.07, 20))
+            let hasTasks = !(routine?.tasks.isEmpty ?? true)
 
-            VStack(spacing: 24) {
-                Spacer(minLength: 8)
+            VStack(spacing: 0) {
+                Spacer(minLength: 16)
 
+                // The title sits well above the timer row so it reads as a
+                // prominent header rather than a label stuck to the ring.
                 Text(routine?.displayName ?? "")
                     .font(AppFont.nunito(nameFont, .semibold))
                     .foregroundStyle(p.foreground)
@@ -35,50 +39,71 @@ struct RoutineTimerView: View {
                     .lineLimit(2)
                     .padding(.horizontal, 24)
 
-                ZStack {
-                    Circle()
-                        .stroke(p.surfaceBorder, lineWidth: stroke)
-                    Circle()
-                        .trim(from: 0, to: runner.progress)
-                        .stroke(p.accent, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 0.2), value: runner.progress)
+                Spacer().frame(height: 48)
 
-                    VStack(spacing: 6) {
-                        Text(timeString(runner.remaining))
-                            .font(AppFont.nunito(timeFont, .thin))
-                            .monospacedDigit()
-                            .foregroundStyle(p.accent)
-                        if runner.isPaused {
-                            Text("Paused")
-                                .font(AppFont.caption)
-                                .foregroundStyle(p.muted)
-                        }
+                // Ring + its controls on the left, the framed To-Do card on the
+                // right. Top-aligned so the card's top lines up with the ring's
+                // top and grows downward as tasks are added. When a routine has
+                // no tasks the ring column simply centers on its own.
+                HStack(alignment: .top, spacing: 56) {
+                    VStack(spacing: 22) {
+                        ringView(p, ring: ring, stroke: stroke, timeFont: timeFont)
+                        controls(p)
+                    }
+                    if hasTasks {
+                        todoCard(routine, p: p)
                     }
                 }
-                .frame(width: ring, height: ring)
+                .padding(.horizontal, 24)
 
-                checklist(routine, p: p)
-
-                controls(p)
-
-                Spacer(minLength: 8)
+                Spacer(minLength: 16)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    // MARK: - Checklist
+    private func ringView(_ p: Palette, ring: CGFloat, stroke: CGFloat, timeFont: CGFloat) -> some View {
+        ZStack {
+            Circle()
+                .stroke(p.surfaceBorder, lineWidth: stroke)
+            Circle()
+                .trim(from: 0, to: runner.progress)
+                .stroke(p.accent, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 0.2), value: runner.progress)
+
+            VStack(spacing: 6) {
+                Text(timeString(runner.remaining))
+                    .font(AppFont.nunito(timeFont, .thin))
+                    .monospacedDigit()
+                    .foregroundStyle(p.accent)
+                if runner.isPaused {
+                    Text("Paused")
+                        .font(AppFont.caption)
+                        .foregroundStyle(p.muted)
+                }
+            }
+        }
+        .frame(width: ring, height: ring)
+    }
+
+    // MARK: - To-Do card
 
     @ViewBuilder
-    private func checklist(_ routine: Routine?, p: Palette) -> some View {
+    private func todoCard(_ routine: Routine?, p: Palette) -> some View {
         if let routine, !routine.tasks.isEmpty {
-            VStack(spacing: 8) {
-                Text(runner.progressCaption)
-                    .font(AppFont.caption)
-                    .tracking(1.5)
-                    .textCase(.uppercase)
-                    .foregroundStyle(p.muted)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("To-Do")
+                        .font(AppFont.gaegu(24))
+                        .foregroundStyle(p.foreground)
+                    Spacer(minLength: 12)
+                    Text(runner.progressCaption)
+                        .font(AppFont.caption)
+                        .tracking(1.5)
+                        .textCase(.uppercase)
+                        .foregroundStyle(p.muted)
+                }
 
                 let rows = VStack(spacing: 0) {
                     ForEach(routine.tasks) { task in
@@ -95,8 +120,13 @@ struct RoutineTimerView: View {
                     rows
                 }
             }
-            .frame(maxWidth: 360)
-            .padding(.horizontal, 24)
+            .padding(16)
+            .frame(minWidth: 240, maxWidth: 300, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(p.surface)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(p.surfaceBorder, lineWidth: 1))
+            )
         }
     }
 
@@ -105,13 +135,13 @@ struct RoutineTimerView: View {
         return Button {
             runner.toggleTask(task.id)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18))
+                    .font(.system(size: 15))
                     .foregroundStyle(done ? p.done : p.muted)
 
                 Text(task.displayTitle)
-                    .font(AppFont.body)
+                    .font(AppFont.nunito(15))
                     .foregroundStyle(done ? p.muted : p.foreground)
                     .strikethrough(done, color: p.muted)
                     .lineLimit(1)

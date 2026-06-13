@@ -20,6 +20,9 @@ struct YourDayTimeline: View {
     @State private var showQuickAdd = false
     /// The rail row currently under the pointer, for the edit affordance.
     @State private var hoveredRow: UUID? = nil
+    /// The routine whose chip was tapped, revealing inline Start + Edit buttons
+    /// so a routine can be launched any time, even well before its window.
+    @State private var revealedRoutine: UUID? = nil
     /// Ticks the view over once a minute so the NOW marker, done fades, and the
     /// start pill move without the user touching anything.
     @State private var now = Date()
@@ -139,9 +142,9 @@ struct YourDayTimeline: View {
         let past = entries.filter { $0.isPast(now: now) }
         let upcoming = entries.filter { !$0.isPast(now: now) }
         let rows = VStack(alignment: .leading, spacing: 0) {
-            ForEach(past) { row($0, past: true, p: p) }
+            ForEach(past) { entryRow($0, past: true, p: p) }
             nowMarker(p)
-            ForEach(upcoming) { row($0, past: false, p: p) }
+            ForEach(upcoming) { entryRow($0, past: false, p: p) }
         }
 
         // Cap the rail at maxVisibleRows; a long list scrolls inside instead
@@ -156,61 +159,39 @@ struct YourDayTimeline: View {
         }
     }
 
-    /// One occurrence on the rail. The whole row is a button that opens the
-    /// item's editor directly in a popup, no list in between.
-    private func row(_ entry: Entry, past: Bool, p: Palette) -> some View {
+    /// Dispatch a rail row by payload. Reminders are a single button that opens
+    /// their editor; routines tap-to-reveal inline Start + Edit so they can be
+    /// launched at any time, not just when the editor is the only action.
+    @ViewBuilder
+    private func entryRow(_ entry: Entry, past: Bool, p: Palette) -> some View {
+        switch entry.payload {
+        case .reminder(let reminder):
+            reminderRow(entry, reminder: reminder, past: past, p: p)
+        case .routine(let routine, let window, let doneToday):
+            routineRow(entry, routine: routine, window: window, doneToday: doneToday, past: past, p: p)
+        }
+    }
+
+    /// A reminder occurrence: the whole row is a button that opens its editor.
+    private func reminderRow(_ entry: Entry, reminder: Reminder, past: Bool, p: Palette) -> some View {
         Button {
-            switch entry.payload {
-            case .reminder(let reminder):
-                controller.reminderToEdit = reminder
-            case .routine(let routine, _, _):
-                controller.routineToEdit = routine
-            }
+            controller.reminderToEdit = reminder
         } label: {
             HStack(alignment: .center, spacing: 10) {
-                Text(entry.time, style: .time)
-                    .font(AppFont.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(past ? p.muted : p.foreground)
-                    .frame(width: 58, alignment: .trailing)
+                rowLeading(entry, past: past, p: p)
 
-                ZStack {
-                    Rectangle()
-                        .fill(p.surfaceBorder)
-                        .frame(width: 2)
-                        .frame(maxHeight: .infinity)
-                    Circle()
-                        .fill(past ? p.muted : p.accent)
-                        .frame(width: 8, height: 8)
-                }
-                .frame(width: 12)
+                Image(systemName: reminder.kind == .focusNudge ? "timer" : "bell")
+                    .font(.system(size: 10))
+                    .foregroundStyle(past ? p.muted : p.accent)
 
-                switch entry.payload {
-                case .reminder(let reminder):
-                    Image(systemName: reminder.kind == .focusNudge ? "timer" : "bell")
-                        .font(.system(size: 10))
-                        .foregroundStyle(past ? p.muted : p.accent)
-
-                    Text(reminder.displayTitle)
-                        .font(AppFont.callout)
-                        .foregroundStyle(p.foreground)
-                        .lineLimit(1)
-
-                case .routine(let routine, let window, _):
-                    routineChip(routine, window: window, past: past, p: p)
-                }
+                Text(reminder.displayTitle)
+                    .font(AppFont.callout)
+                    .foregroundStyle(p.foreground)
+                    .lineLimit(1)
 
                 // Reminders above the marker have fired, so they read "done".
-                // A routine only earns the tag from the tracker; a window that
-                // slipped by unrun just fades without a label.
-                if past, showsDoneTag(entry) {
-                    Text("done")
-                        .font(AppFont.caption)
-                        .foregroundStyle(p.muted)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(p.surface))
-                        .overlay(Capsule().stroke(p.surfaceBorder, lineWidth: 1))
+                if past {
+                    doneTag(p)
                 }
 
                 Spacer(minLength: 0)
@@ -223,10 +204,7 @@ struct YourDayTimeline: View {
                 }
             }
             .frame(height: Self.rowHeight)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(hoveredRow == entry.id ? p.accent.opacity(0.10) : Color.clear)
-            )
+            .background(rowHighlight(entry, p: p))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -234,21 +212,125 @@ struct YourDayTimeline: View {
         .onHover { hovering in
             hoveredRow = hovering ? entry.id : (hoveredRow == entry.id ? nil : hoveredRow)
         }
-        .help(helpText(for: entry))
+        .help("Edit this reminder")
     }
 
-    private func showsDoneTag(_ entry: Entry) -> Bool {
-        switch entry.payload {
-        case .reminder: return true
-        case .routine(_, _, let doneToday): return doneToday
+    /// A routine occurrence: tapping the chip reveals a "Start" pill and an edit
+    /// pencil on the trailing edge, so the routine can be launched well before
+    /// its window or edited, without the chip being a single fixed action.
+    private func routineRow(_ entry: Entry, routine: Routine, window: ClosedRange<Date>, doneToday: Bool, past: Bool, p: Palette) -> some View {
+        let revealed = revealedRoutine == entry.id
+        return HStack(alignment: .center, spacing: 10) {
+            rowLeading(entry, past: past, p: p)
+
+            routineChip(routine, window: window, past: past, p: p)
+                .onTapGesture {
+                    revealedRoutine = revealed ? nil : entry.id
+                }
+
+            // A routine only earns the tag from the tracker; a window that
+            // slipped by unrun just fades without a label.
+            if past, doneToday {
+                doneTag(p)
+            }
+
+            Spacer(minLength: 0)
+
+            if revealed {
+                startInlineButton(routine, p)
+                editPencilButton(routine, p)
+            } else if hoveredRow == entry.id {
+                Image(systemName: "hand.tap")
+                    .font(.system(size: 10))
+                    .foregroundStyle(p.muted)
+                    .padding(.trailing, 4)
+            }
+        }
+        .frame(height: Self.rowHeight)
+        .background(rowHighlight(entry, p: p))
+        .contentShape(Rectangle())
+        .opacity(past ? 0.5 : 1)
+        .onHover { hovering in
+            hoveredRow = hovering ? entry.id : (hoveredRow == entry.id ? nil : hoveredRow)
+        }
+        .help("Tap to start or edit this routine")
+    }
+
+    /// The shared time label + timeline dot at the start of every rail row.
+    private func rowLeading(_ entry: Entry, past: Bool, p: Palette) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text(entry.time, style: .time)
+                .font(AppFont.caption)
+                .monospacedDigit()
+                .foregroundStyle(past ? p.muted : p.foreground)
+                .frame(width: 58, alignment: .trailing)
+
+            ZStack {
+                Rectangle()
+                    .fill(p.surfaceBorder)
+                    .frame(width: 2)
+                    .frame(maxHeight: .infinity)
+                Circle()
+                    .fill(past ? p.muted : p.accent)
+                    .frame(width: 8, height: 8)
+            }
+            .frame(width: 12)
         }
     }
 
-    private func helpText(for entry: Entry) -> String {
-        switch entry.payload {
-        case .reminder: return "Edit this reminder"
-        case .routine: return "Edit this routine"
+    private func doneTag(_ p: Palette) -> some View {
+        Text("done")
+            .font(AppFont.caption)
+            .foregroundStyle(p.muted)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(p.surface))
+            .overlay(Capsule().stroke(p.surfaceBorder, lineWidth: 1))
+    }
+
+    private func rowHighlight(_ entry: Entry, p: Palette) -> some View {
+        RoundedRectangle(cornerRadius: 6)
+            .fill(hoveredRow == entry.id ? p.accent.opacity(0.10) : Color.clear)
+    }
+
+    /// The compact inline Start pill revealed beside a tapped routine chip.
+    private func startInlineButton(_ routine: Routine, _ p: Palette) -> some View {
+        Button {
+            revealedRoutine = nil
+            controller.routineToStart = routine
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 9))
+                Text("Start")
+                    .font(AppFont.nunito(11, .semibold))
+            }
+            .foregroundStyle(p.background)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(p.accent))
+            .contentShape(Capsule())
         }
+        .buttonStyle(.plain)
+        .help("Start this routine now, even before its window.")
+    }
+
+    /// The edit pencil revealed beside a tapped routine chip.
+    private func editPencilButton(_ routine: Routine, _ p: Palette) -> some View {
+        Button {
+            revealedRoutine = nil
+            controller.routineToEdit = routine
+        } label: {
+            Image(systemName: "pencil")
+                .font(.system(size: 11))
+                .foregroundStyle(p.accent)
+                .padding(5)
+                .background(Circle().fill(p.accent.opacity(0.15)))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .padding(.trailing, 4)
+        .help("Edit this routine")
     }
 
     /// A routine's rail row content: a small rounded chip so routines read as

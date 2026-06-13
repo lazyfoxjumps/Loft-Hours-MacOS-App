@@ -19,20 +19,30 @@ struct RootView: View {
     }
 
     var body: some View {
-        if !config.hasOnboarded {
-            OnboardingView()
-                .environmentObject(theme)
-                .environmentObject(config)
-                .environmentObject(googleAuth)
-        } else {
-            mainContent
+        Group {
+            if !config.hasOnboarded {
+                OnboardingView()
+                    .environmentObject(theme)
+                    .environmentObject(config)
+                    .environmentObject(googleAuth)
+            } else {
+                mainContent
+            }
         }
+        // Drive the whole window's light/dark appearance from the theme, not the
+        // user's macOS setting. Without this, AppKit-drawn controls (system
+        // .bordered / .borderedProminent buttons, steppers, toggles, field
+        // bezels) render in the OS appearance and can land dark-on-dark (or
+        // light-on-light) whenever the OS setting and the theme's luminance
+        // disagree. Tying it to the palette guarantees every system control
+        // contrasts the theme background.
+        .preferredColorScheme(theme.palette.isLight ? .light : .dark)
     }
 
     private var mainContent: some View {
         let p = theme.palette
         return ZStack {
-            (isDone ? p.doneBackground : p.background)
+            p.background
                 .ignoresSafeArea()
 
             Group {
@@ -67,7 +77,7 @@ struct RootView: View {
         // strip is hidden behind it instead of bleeding through the glyphs.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             footerMark(p)
-                .background(isDone ? p.doneBackground : p.background)
+                .background(p.background)
         }
         // Floor below which nothing overlaps: the gear clears the intake
         // header's Review button with room to spare at 660.
