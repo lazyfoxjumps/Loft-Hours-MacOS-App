@@ -1,52 +1,36 @@
 import SwiftUI
 import AppKit
 
-/// A borderless, caret-free emoji input. It draws nothing on its own (the
-/// SwiftUI wrapper supplies the circle + "+" affordance); it exists only to be
-/// the first responder so a click pops the macOS emoji/character palette, and
-/// to filter whatever gets inserted down to a single emoji. No placeholder, no
-/// blinking insertion point, no bezel.
+/// An invisible, caret-free emoji input meant to sit on top of a SwiftUI circle
+/// (the "+"/emoji glyph is drawn by SwiftUI underneath). It draws nothing and is
+/// NOT a text field, so there is no field editor and therefore never an I-beam:
+/// it's a plain NSView that becomes the first responder, shows a pointing-hand
+/// cursor, opens the macOS emoji palette on every click, and receives the chosen
+/// emoji through NSTextInputClient. Whatever the palette inserts is filtered down
+/// to a single emoji before reaching the binding.
 struct EmojiField: NSViewRepresentable {
     @Binding var emoji: String
 
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeCoordinator() -> Coordinator { Coordinator(emoji: $emoji) }
 
-    func makeNSView(context: Context) -> EmojiNSTextField {
-        let field = EmojiNSTextField()
-        field.delegate = context.coordinator
-        field.alignment = .center
-        field.font = .systemFont(ofSize: 15)
-        field.isBordered = false
-        field.isBezeled = false
-        field.drawsBackground = false
-        field.focusRingType = .none
-        field.stringValue = emoji
-        field.refusesFirstResponder = false
-        return field
-    }
-
-    func updateNSView(_ field: EmojiNSTextField, context: Context) {
-        if field.stringValue != emoji {
-            field.stringValue = emoji
-        }
-    }
-
-    final class Coordinator: NSObject, NSTextFieldDelegate {
-        private let parent: EmojiField
-
-        init(_ parent: EmojiField) { self.parent = parent }
-
-        func controlTextDidChange(_ obj: Notification) {
-            guard let field = obj.object as? NSTextField else { return }
-            // Keep only the last emoji grapheme; reject plain text/whitespace.
-            let kept = EmojiField.lastEmoji(in: field.stringValue) ?? ""
-            if field.stringValue != kept {
-                field.stringValue = kept
-            }
-            if parent.emoji != kept {
-                parent.emoji = kept
+    func makeNSView(context: Context) -> EmojiInputView {
+        let view = EmojiInputView()
+        let coord = context.coordinator
+        view.onPick = { inserted in
+            if let kept = EmojiField.lastEmoji(in: inserted) {
+                coord.emoji.wrappedValue = kept
             }
         }
+        return view
+    }
+
+    func updateNSView(_ view: EmojiInputView, context: Context) {
+        context.coordinator.emoji = $emoji
+    }
+
+    final class Coordinator {
+        var emoji: Binding<String>
+        init(emoji: Binding<String>) { self.emoji = emoji }
     }
 
     /// The last grapheme cluster in `text` that reads as an emoji, or nil.
@@ -64,38 +48,48 @@ struct EmojiField: NSViewRepresentable {
     }
 }
 
-/// An NSTextField that behaves like a button: every click (re)opens the system
-/// character palette, the hover cursor is a pointing hand rather than an I-beam,
-/// and the blinking caret is suppressed while it holds focus. The caret is
-/// cleared on the shared field editor only while this field is edited, then
-/// restored on end-editing so other text fields keep their cursor.
-final class EmojiNSTextField: NSTextField {
-    override func becomeFirstResponder() -> Bool {
-        let ok = super.becomeFirstResponder()
-        if ok {
-            (currentEditor() as? NSTextView)?.insertionPointColor = .clear
-        }
-        return ok
-    }
+/// A transparent NSView that acts as an emoji-only input. It is the first
+/// responder target for the system character palette and reports the inserted
+/// text through `onPick`. Because it isn't an NSTextField there is no field
+/// editor: the hover cursor stays a pointing hand and no caret ever appears.
+final class EmojiInputView: NSView, @preconcurrency NSTextInputClient {
+    var onPick: ((String) -> Void)?
 
-    override func textDidEndEditing(_ notification: Notification) {
-        // Restore the shared field editor's caret for the next text field.
-        (notification.object as? NSTextView)?.insertionPointColor = .textColor
-        super.textDidEndEditing(notification)
-    }
+    override var acceptsFirstResponder: Bool { true }
 
     override func mouseDown(with event: NSEvent) {
-        // Take focus if we don't have it, then open the palette on EVERY click
-        // so changing your mind doesn't take several tries. Deliberately skip
-        // super so the click doesn't place a text caret.
-        if currentEditor() == nil {
+        // Take focus if needed, then (re)open the palette on EVERY click so
+        // changing your mind never takes several tries.
+        if window?.firstResponder !== self {
             window?.makeFirstResponder(self)
         }
         NSApp.orderFrontCharacterPalette(self)
     }
 
     override func resetCursorRects() {
-        // It's a picker button, not a text box: show the pointing hand on hover.
         addCursorRect(bounds, cursor: .pointingHand)
+    }
+
+    // MARK: - NSTextInputClient
+
+    func insertText(_ string: Any, replacementRange: NSRange) {
+        let text = (string as? String) ?? (string as? NSAttributedString)?.string ?? ""
+        if !text.isEmpty { onPick?(text) }
+    }
+
+    override func doCommand(by selector: Selector) {}
+    func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {}
+    func unmarkText() {}
+    func selectedRange() -> NSRange { NSRange(location: NSNotFound, length: 0) }
+    func markedRange() -> NSRange { NSRange(location: NSNotFound, length: 0) }
+    func hasMarkedText() -> Bool { false }
+    func attributedSubstring(forProposedRange range: NSRange, actualRange: NSRangePointer?) -> NSAttributedString? { nil }
+    func validAttributesForMarkedText() -> [NSAttributedString.Key] { [] }
+    func characterIndex(for point: NSPoint) -> Int { NSNotFound }
+
+    func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
+        // Anchor the palette near the control.
+        guard let window = window else { return .zero }
+        return window.convertToScreen(convert(bounds, to: nil))
     }
 }

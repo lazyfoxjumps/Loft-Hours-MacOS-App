@@ -218,10 +218,14 @@ struct RoutineEditor: View {
             Circle()
                 .fill(p.surface)
                 .overlay(Circle().stroke(p.surfaceBorder, lineWidth: 1))
+            // SwiftUI draws the glyph; EmojiField is an invisible input on top.
             if emoji.wrappedValue.isEmpty {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(p.muted)
+            } else {
+                Text(emoji.wrappedValue)
+                    .font(.system(size: 14))
             }
             EmojiField(emoji: emoji)
         }
