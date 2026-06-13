@@ -24,7 +24,15 @@ Loft Hours is built for exactly that. It's a digital **body double**, that "some
 
 It does **not** nag you. It does **not** gamify your life with streaks and confetti and guilt. It quietly sets up your work session, stays out of your way while you work, and then shows you the receipts of what you actually did. That's it.
 
-> **Heads up:** Loft Hours is **version 1.1**. It isn't notarized by Apple yet, so the very first time you open it macOS will ask you to confirm. That's a one-time step, walked through [below](#apple-wont-let-me-open-it-the-gatekeeper-bit).
+> **Heads up:** Loft Hours is **version 1.2**. It isn't notarized by Apple yet, so the very first time you open it macOS will ask you to confirm. That's a one-time step, walked through [below](#apple-wont-let-me-open-it-the-gatekeeper-bit).
+
+---
+
+## ✨ What's new in 1.2
+
+- 🔁 **Routines** — for the parts of your day that run on autopilot. Build a repeating checklist (a morning kickoff, an evening wind-down, anything), give it an emoji, and set when and how often it repeats. When its window comes around, a one-tap **Start** button shows up on the home screen and opens a calm runner: a countdown plus your checklist to tick off. Finish early whenever, no pressure and no wrap-up. Opt in and it'll gently nudge you when the window opens, and with calendar sync on each routine quietly lands on your Google Calendar as a **free** event (never marked busy).
+- 🗓️ **A calendar for your logs** — the **Logs** pane in Review is now a real month grid. Each day fills with a soft color that deepens the more you got done (focus sessions and finished routines both count), and tapping a day shows everything you logged that day, routines included.
+- ⏰ **Reminders that bend to your week** — pick the exact days ("Mon, Wed, Fri") or repeat every few days ("every other day"), on top of the existing once/daily/weekly/monthly. With calendar sync on, reminders mirror to Google Calendar too.
 
 ---
 
@@ -62,14 +70,15 @@ The whole vibe: **gentle structure, zero shame.**
 - 🎯 **Multi-task intake** — line up everything you want to tackle, not just one thing.
 - ⭕ **Visual focus timer** — a calm circular countdown so you always know where you are in the block.
 - ⏱️ **Stopwatch Mode** — when a countdown feels like pressure, flip on "Just track time" and the timer counts up instead. Stop whenever you're done and the session logs its real length.
-- ⏰ **Reminders & "Your day"** — set little nudges for tasks ("water the plants") or a gentle "time to focus" ping, once or daily/weekly/monthly. Today's reminders live on a tidy timeline on the home screen with a NOW marker, so you can see your day at a glance.
+- ⏰ **Reminders & "Your day"** — set little nudges for tasks ("water the plants") or a gentle "time to focus" ping. Repeat them once, daily, weekly, monthly, on specific weekdays ("Mon, Wed, Fri"), or every few days. Today's reminders live on a tidy timeline on the home screen with a NOW marker, so you can see your day at a glance.
+- 🔁 **Routines** — repeating checklists for the rituals you do on autopilot (a morning kickoff, an evening wind-down). Each gets its own time window, an emoji, and as many little tasks as you want; when the window comes around, a one-tap Start opens a gentle runner with a countdown and your checklist. Opt-in nudges and Google Calendar sync (as a non-busy "free" event) included.
 - 🔕 **Do Not Disturb toggle** — flip your Mac's Focus mode on/off right from the app (one-time setup, see [below](#optional-do-not-disturb--focus-setup)). If you haven't set it up yet, the home screen gently points you to it instead of failing silently.
 - 🚪 **App wrangling** — auto-close the apps that distract you when a session starts, and reopen them after if you want.
 - 📅 **Google Calendar blocking (optional)** — connect your Google account once, and every focus block drops a "busy" event on your calendar for the length of the timer, titled "Loft Hours - your tasks", so the people who share your calendar can see you're heads-down. Finished blocks stay on your calendar.
 - ☕ **Break check-ins** — a rotating mix of encouragement and gentle body-care reminders (drink water, stretch, rest your eyes) between blocks, never naggy.
 - ✅ **Done-checklist wrap-up** — check off what you finished, and add as many extra "Other" things you did as you want.
 - 📝 **Automatic session logs** — every session is saved as a plain Markdown file in `~/Documents/study-log/`. They're yours, readable in any text app, forever.
-- 📊 **Weekly & monthly reviews** — see your focused hours, your streak, when you do your best work, and patterns you'd never notice on your own. A built-in **Logs** pane lets you browse every past session right inside the app, goal, done-list, notes and all.
+- 📊 **Weekly & monthly reviews** — see your focused hours, your streak, when you do your best work, and patterns you'd never notice on your own. A built-in **Logs** pane shows your history as a month calendar that deepens on your busiest days; tap any day to browse every session and routine you logged, goal, done-list, notes and all.
 - 🎨 **Themes** — opens in a warm **Light Academia** look, with six more curated palettes a click away (Dark Academia, Candlelit Nocturne, Monochrome Magic, Modern Minimalist, Forest Cottagecore, and Linen & Latte).
 - 💾 **Crash-safe + resume** — if your Mac sleeps or quits mid-session, Loft Hours picks up where you left off and can pre-fill your next session from last time.
 
@@ -84,7 +93,7 @@ The whole vibe: **gentle structure, zero shame.**
 - An **Apple Silicon Mac** (M1, M2, M3, or M4). Loft Hours does **not** run on older Intel Macs.
 
 ### Steps
-1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-1.1.dmg`.
+1. Go to the [**Releases**](../../releases) page and download the latest `Loft-Hours-1.2.dmg`.
 2. Double-click the downloaded `.dmg` to open it.
 3. **Drag the Loft Hours icon onto the Applications folder** in the window that pops up.
 4. Open your **Applications** folder and try to launch Loft Hours.

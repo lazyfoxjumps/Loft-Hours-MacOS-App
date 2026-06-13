@@ -5,19 +5,26 @@ All notable changes to Loft Hours are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-06-13
 
-A friction-removal pass: reminders that bend to your actual week, editing without the scroll hunt, and a window that can no longer squish itself into overlapping buttons.
+The routines update: build a repeating checklist for the parts of your day that run on autopilot (a morning kickoff, an evening wind-down, whatever), watch your focus history fill in on a real calendar, and bend reminders to your actual week.
 
 ### Added
+- Routines: build a repeating checklist that lives in its own time window. Give it an emoji, set when and how often it repeats, and add as many little tasks as you like. When the window is near, a one-tap Start button appears on the home screen and opens a calm runner with a countdown plus your checklist to tick off. Finish early whenever; no pressure, no wrap-up.
+- Routine nudges: opt in and Loft Hours pings you when a routine's window opens, then one tap brings the app forward with Start already waiting.
+- Routines on your calendar: with calendar sync on, each routine becomes a recurring "free" event (never marked busy, so a routine won't make you look unavailable). Toggling or editing keeps the event in step, and deleting the routine removes it.
+- Crash-safe routine tracking: your ticks are saved the instant you make them, so a sleep or quit mid-routine resumes exactly where you left off.
+- A calendar view for your logs: the Review sheet's Logs pane is now a real month grid. Each day fills with a soft activity color that deepens the more you did (sessions and finished routines both count), and tapping a day lists everything you logged, with each routine showing how many tasks you ticked.
 - Custom reminder schedules: pick the exact days of the week ("Mon, Wed, Fri") or repeat every few days ("every other day"), alongside the existing once/daily/weekly/monthly options.
 - Reminders now sync to Google Calendar when calendar sync is on: each reminder becomes a free (non-busy) recurring event with a popup at fire time, edits update the event, and deleting the reminder removes it.
+- An emoji picker for routines and their tasks: a tidy grid of quick picks instead of fighting the system emoji field.
 
 ### Changed
 - Editing a reminder opens that one reminder in its own popup, both from a "Your day" rail row and from the All reminders list. No more scrolling to the bottom of the list to find the form.
 - The window now has a proper minimum size, and the footer wordmark sits in its own strip, so the gear, the Review button, and "Let's get into it" can never overlap each other again.
 - The close button on the Reminders, Review, and Settings sheets is bigger and easier to see.
 - Review lost its redundant Done button (the close button already does that), and "Reveal report in Finder" is now a clearly visible "Show in Finder" button on every theme.
+- A polish round on the routine runner: a cleaner timer layout, big tap targets on the checklist, and theme-aware contrast on the new activity circles so day numbers stay readable on every palette.
 
 ## [1.1.0] - 2026-06-11
 
@@ -76,6 +83,7 @@ The first public beta: a "study with me" focus app for ADHD and neurodivergent b
 - Un-notarized, so macOS gates the first launch once (right-click, Open).
 - On the unsigned build the notification icon may render blank and notification permission may not persist between launches. Chimes work regardless.
 
+[1.2.0]: https://github.com/lazyfoxjumps/Loft-Hours-MacOS-App/releases/tag/v1.2.0
 [1.1.0]: https://github.com/lazyfoxjumps/Loft-Hours-MacOS-App/releases/tag/v1.1.0
 [1.0.0]: https://github.com/lazyfoxjumps/Loft-Hours-MacOS-App/releases/tag/v1.0.0
 [0.9.1-beta]: https://github.com/lazyfoxjumps/Loft-Hours-MacOS-App/releases/tag/v0.9.1-beta
